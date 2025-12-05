@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 import re
+from unicodedata import normalize as unormalize
 from sqlalchemy import (
     Column,
     Integer,
@@ -80,9 +81,30 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
     Strategy: find existing MarketORM by (source, market_id), update fields,
     delete existing contracts explicitly and insert fresh ones from the dataclass.
     """
+    # normalize market_id so stored values are consistent across platforms
+    def _normalize_id_raw(s: Optional[str], max_len: int = 128) -> Optional[str]:
+        if s is None:
+            return None
+        # normalize unicode, strip, remove surrounding quotes and control chars
+        s2 = unormalize("NFKC", s).strip().strip('"').strip("'")
+        s2 = re.sub(r"[\x00-\x1f\r\n]", "", s2)
+        # replace whitespace with underscore
+        s2 = re.sub(r"\s+", "_", s2)
+        # lower-case
+        s2 = s2.lower()
+        # keep only a-z0-9_- chars
+        s2 = re.sub(r"[^a-z0-9_\-]", "", s2)
+        # collapse multiple underscores/dashes
+        s2 = re.sub(r"[_\-]{2,}", "_", s2)
+        if max_len:
+            s2 = s2[:max_len]
+        return s2 or None
+
+    norm_market_id = _normalize_id_raw(market.market_id)
+
     m = (
         session.query(MarketORM)
-        .filter_by(source=market.source, market_id=market.market_id)
+        .filter_by(source=market.source, market_id=norm_market_id or market.market_id)
         .one_or_none()
     )
     if m is None:
@@ -106,15 +128,32 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
     def _sanitize_str(s: Optional[str]) -> Optional[str]:
         if s is None:
             return None
-        # remove surrounding quotes and control characters
-        out = s.strip().strip('"').strip("'")
+        out = unormalize("NFKC", s).strip().strip('"').strip("'")
         out = re.sub(r"[\x00-\x1f\r\n]", "", out)
         return out
 
-    # insert fresh contracts (deduplicated by contract_id)
+    # insert fresh contracts (deduplicated by contract_id) using stricter normalization
     seen = set()
+    def _normalize_contract_id(raw: Optional[str], max_len: int = 128) -> Optional[str]:
+        if raw is None:
+            return None
+        # basic sanitize first
+        r = _sanitize_str(raw)
+        if r is None:
+            return None
+        # normalize unicode, lowercase, replace whitespace
+        r = unormalize("NFKC", r).strip().lower()
+        r = re.sub(r"\s+", "_", r)
+        # remove characters except alnum, dash, underscore
+        r = re.sub(r"[^a-z0-9_\-]", "", r)
+        # collapse adjacent separators
+        r = re.sub(r"[_\-]{2,}", "_", r)
+        # trim
+        r = r[:max_len]
+        return r or None
+
     for c in market.contracts:
-        cid = _sanitize_str(c.contract_id) or ""
+        cid = _normalize_contract_id(c.contract_id)
         if not cid or cid in seen:
             continue
         seen.add(cid)
