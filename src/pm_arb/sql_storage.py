@@ -7,6 +7,7 @@ helpers to initialize the DB and save/load markets.
 from __future__ import annotations
 
 from typing import Optional
+import re
 from sqlalchemy import (
     Column,
     Integer,
@@ -77,7 +78,7 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
     """Insert or update a UnifiedMarket and its contracts.
 
     Strategy: find existing MarketORM by (source, market_id), update fields,
-    clear existing contracts and insert fresh ones from the dataclass.
+    delete existing contracts explicitly and insert fresh ones from the dataclass.
     """
     m = (
         session.query(MarketORM)
@@ -88,6 +89,12 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
         m = MarketORM(source=market.source, market_id=market.market_id)
         session.add(m)
         session.flush()
+    else:
+        # explicitly delete existing contracts to avoid unique constraint races
+        session.query(ContractORM).filter(ContractORM.market_id_fk == m.id).delete(
+            synchronize_session=False
+        )
+        session.flush()
 
     # update scalar fields
     m.name = market.name
@@ -95,14 +102,28 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
     m.category = market.category
     m.extra = market.extra or {}
 
-    # replace contracts
-    m.contracts[:] = []
+    # helper to sanitize incoming strings (strip quotes, control chars)
+    def _sanitize_str(s: Optional[str]) -> Optional[str]:
+        if s is None:
+            return None
+        # remove surrounding quotes and control characters
+        out = s.strip().strip('"').strip("'")
+        out = re.sub(r"[\x00-\x1f\r\n]", "", out)
+        return out
+
+    # insert fresh contracts (deduplicated by contract_id)
+    seen = set()
     for c in market.contracts:
+        cid = _sanitize_str(c.contract_id) or ""
+        if not cid or cid in seen:
+            continue
+        seen.add(cid)
         co = ContractORM(
-            contract_id=c.contract_id,
-            name=c.name,
-            side=c.side,
-            outcome_type=c.outcome_type,
+            market_id_fk=m.id,
+            contract_id=cid,
+            name=_sanitize_str(c.name) or "",
+            side=_sanitize_str(c.side) or "",
+            outcome_type=_sanitize_str(c.outcome_type) or "",
             price_bid=c.price_bid,
             price_ask=c.price_ask,
             last_price=c.last_price,
@@ -110,9 +131,8 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
             open_interest=c.open_interest,
             extra=c.extra or {},
         )
-        m.contracts.append(co)
+        session.add(co)
 
-    session.add(m)
     session.commit()
 
 
