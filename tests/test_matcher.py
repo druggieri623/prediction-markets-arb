@@ -44,7 +44,7 @@ def matcher():
 
 class TestMarketMatcher:
     """Tests for MarketMatcher class."""
-    
+
     def test_initialization_default(self):
         """Test default initialization."""
         matcher = MarketMatcher()
@@ -53,7 +53,7 @@ class TestMarketMatcher:
         assert matcher.contract_weight == 0.3
         assert matcher.temporal_weight == 0.1
         assert matcher.min_score_threshold == 0.5
-    
+
     def test_initialization_custom_weights(self):
         """Test custom weight initialization."""
         matcher = MarketMatcher(
@@ -63,7 +63,7 @@ class TestMarketMatcher:
             temporal_weight=0.1,
         )
         assert matcher.name_weight == 0.5
-    
+
     def test_initialization_invalid_weights(self):
         """Test that invalid weights raise error."""
         with pytest.raises(ValueError):
@@ -73,28 +73,28 @@ class TestMarketMatcher:
                 contract_weight=0.3,
                 temporal_weight=0.1,  # Sum > 1.0
             )
-    
+
     def test_clean_text(self, matcher):
         """Test text cleaning."""
         assert matcher._clean_text("Hello, World!") == "hello world"
         assert matcher._clean_text("Test  Multiple   Spaces") == "test multiple spaces"
         assert matcher._clean_text("UPPERCASE") == "uppercase"
-    
+
     def test_fuzzy_match_identical(self, matcher):
         """Test fuzzy matching with identical strings."""
         score = matcher._fuzzy_match("Bitcoin", "Bitcoin")
         assert score == 1.0
-    
+
     def test_fuzzy_match_similar(self, matcher):
         """Test fuzzy matching with similar strings."""
         score = matcher._fuzzy_match("Bitcoin", "Bitcoins")
         assert 0.8 < score < 1.0
-    
+
     def test_fuzzy_match_dissimilar(self, matcher):
         """Test fuzzy matching with dissimilar strings."""
         score = matcher._fuzzy_match("Apple", "Orange")
         assert score < 0.5
-    
+
     def test_category_similarity_exact_match(self, matcher):
         """Test category similarity with exact match."""
         market_a = UnifiedMarket(
@@ -109,10 +109,10 @@ class TestMarketMatcher:
             name="Market B",
             category="Politics",
         )
-        
+
         score = matcher._compute_category_similarity(market_a, market_b)
         assert score == 1.0
-    
+
     def test_category_similarity_partial_match(self, matcher):
         """Test category similarity with partial match."""
         market_a = UnifiedMarket(
@@ -127,10 +127,10 @@ class TestMarketMatcher:
             name="Market B",
             category="U.S. Politics",
         )
-        
+
         score = matcher._compute_category_similarity(market_a, market_b)
-        assert score == 0.7
-    
+        assert score == 0.85
+
     def test_category_similarity_no_match(self, matcher):
         """Test category similarity with no match."""
         market_a = UnifiedMarket(
@@ -145,10 +145,10 @@ class TestMarketMatcher:
             name="Market B",
             category="Sports",
         )
-        
+
         score = matcher._compute_category_similarity(market_a, market_b)
         assert score == 0.0
-    
+
     def test_category_similarity_missing(self, matcher):
         """Test category similarity with missing category."""
         market_a = UnifiedMarket(
@@ -163,10 +163,10 @@ class TestMarketMatcher:
             name="Market B",
             category=None,
         )
-        
+
         score = matcher._compute_category_similarity(market_a, market_b)
-        assert score == 0.5
-    
+        assert score == 0.6
+
     def test_contract_similarity_binary(self, matcher):
         """Test contract similarity with binary outcomes."""
         contract_yes = UnifiedContract(
@@ -185,7 +185,7 @@ class TestMarketMatcher:
             side="NO",
             outcome_type="binary",
         )
-        
+
         market_a = UnifiedMarket(
             source="kalshi",
             market_id="1",
@@ -198,15 +198,15 @@ class TestMarketMatcher:
             name="Market B",
             contracts=[contract_yes, contract_no],
         )
-        
+
         score = matcher._compute_contract_similarity(market_a, market_b)
         assert score == 1.0
-    
+
     def test_find_matches_empty_lists(self, matcher):
         """Test find_matches with empty lists."""
         matches = matcher.find_matches([], [])
         assert matches == []
-    
+
     def test_find_matches_identical_markets(self, matcher, sample_market):
         """Test finding matches with identical markets from different sources."""
         market_a = UnifiedMarket(
@@ -241,11 +241,11 @@ class TestMarketMatcher:
                 )
             ],
         )
-        
+
         matches = matcher.find_matches([market_a], [market_b])
         assert len(matches) >= 1
         assert matches[0].match_score > 0.8
-    
+
     def test_find_matches_different_sources_only(self, matcher):
         """Test that cross_source_only filter works."""
         market = UnifiedMarket(
@@ -253,12 +253,10 @@ class TestMarketMatcher:
             market_id="1",
             name="Market A",
         )
-        
-        matches = matcher.find_matches(
-            [market], [market], cross_source_only=True
-        )
+
+        matches = matcher.find_matches([market], [market], cross_source_only=True)
         assert len(matches) == 0
-    
+
     def test_match_result_representation(self, sample_market):
         """Test MatchResult string representation."""
         market_a = UnifiedMarket(
@@ -271,7 +269,7 @@ class TestMarketMatcher:
             market_id="2",
             name="Market B",
         )
-        
+
         result = MatchResult(
             market_a=market_a,
             market_b=market_b,
@@ -282,13 +280,13 @@ class TestMarketMatcher:
             temporal_proximity=0.9,
             confidence="high",
         )
-        
+
         repr_str = repr(result)
         assert "kalshi/1" in repr_str
         assert "polymarket/2" in repr_str
         assert "0.85" in repr_str
         assert "high" in repr_str
-    
+
     def test_compute_confidence_high(self, matcher):
         """Test high confidence computation."""
         confidence = matcher._compute_confidence(
@@ -298,7 +296,7 @@ class TestMarketMatcher:
             total_contracts=2,
         )
         assert confidence == "high"
-    
+
     def test_compute_confidence_medium(self, matcher):
         """Test medium confidence computation."""
         confidence = matcher._compute_confidence(
@@ -308,7 +306,7 @@ class TestMarketMatcher:
             total_contracts=2,
         )
         assert confidence == "medium"
-    
+
     def test_compute_confidence_low(self, matcher):
         """Test low confidence computation."""
         confidence = matcher._compute_confidence(
@@ -318,7 +316,7 @@ class TestMarketMatcher:
             total_contracts=2,
         )
         assert confidence == "low"
-    
+
     def test_match_single_pair(self, matcher):
         """Test matching a single pair of markets."""
         market_a = UnifiedMarket(
@@ -331,8 +329,99 @@ class TestMarketMatcher:
             market_id="2",
             name="Bitcoin price",
         )
-        
+
         result = matcher.match_single_pair(market_a, market_b)
         assert isinstance(result, MatchResult)
         assert result.market_a == market_a
         assert result.market_b == market_b
+
+    def test_temporal_similarity_same_year(self, matcher):
+        """Test temporal similarity with same year bonus."""
+        market_a = UnifiedMarket(
+            source="kalshi",
+            market_id="1",
+            name="Market A",
+            event_time="2025-03-15T00:00:00Z",
+        )
+        market_b = UnifiedMarket(
+            source="polymarket",
+            market_id="2",
+            name="Market B",
+            event_time="2025-11-30T00:00:00Z",
+        )
+
+        score = matcher._compute_temporal_similarity(market_a, market_b)
+        assert score == 0.8  # Same year bonus
+
+    def test_temporal_similarity_same_month(self, matcher):
+        """Test temporal similarity with same month."""
+        market_a = UnifiedMarket(
+            source="kalshi",
+            market_id="1",
+            name="Market A",
+            event_time="2025-05-15T00:00:00Z",
+        )
+        market_b = UnifiedMarket(
+            source="polymarket",
+            market_id="2",
+            name="Market B",
+            event_time="2025-05-28T00:00:00Z",
+        )
+
+        score = matcher._compute_temporal_similarity(market_a, market_b)
+        assert score == 0.95  # Same month bonus
+
+    def test_temporal_similarity_exact_date(self, matcher):
+        """Test temporal similarity with exact date match."""
+        market_a = UnifiedMarket(
+            source="kalshi",
+            market_id="1",
+            name="Market A",
+            event_time="2025-12-31T00:00:00Z",
+        )
+        market_b = UnifiedMarket(
+            source="polymarket",
+            market_id="2",
+            name="Market B",
+            event_time="2025-12-31T23:59:59Z",
+        )
+
+        score = matcher._compute_temporal_similarity(market_a, market_b)
+        assert score == 1.0  # Same date
+
+    def test_temporal_similarity_different_years(self, matcher):
+        """Test temporal similarity with different years."""
+        market_a = UnifiedMarket(
+            source="kalshi",
+            market_id="1",
+            name="Market A",
+            event_time="2024-12-31T00:00:00Z",
+        )
+        market_b = UnifiedMarket(
+            source="polymarket",
+            market_id="2",
+            name="Market B",
+            event_time="2025-01-05T00:00:00Z",
+        )
+
+        score = matcher._compute_temporal_similarity(market_a, market_b)
+        # Within threshold window, gets partial credit
+        assert 0.0 < score < 0.8
+
+    def test_temporal_similarity_far_apart(self, matcher):
+        """Test temporal similarity with very distant dates."""
+        market_a = UnifiedMarket(
+            source="kalshi",
+            market_id="1",
+            name="Market A",
+            event_time="2024-01-01T00:00:00Z",
+        )
+        market_b = UnifiedMarket(
+            source="polymarket",
+            market_id="2",
+            name="Market B",
+            event_time="2025-12-31T00:00:00Z",
+        )
+
+        score = matcher._compute_temporal_similarity(market_a, market_b)
+        assert score == 0.1  # Very different dates

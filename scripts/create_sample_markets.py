@@ -17,7 +17,7 @@ from pm_arb.sql_storage import init_db, save_market
 
 def create_sample_markets():
     """Create sample markets designed to match across platforms."""
-    
+
     # Bitcoin price markets (should match across platforms)
     kalshi_bitcoin = UnifiedMarket(
         source="kalshi",
@@ -48,7 +48,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     polymarket_bitcoin = UnifiedMarket(
         source="polymarket",
         market_id="0xabc123bitcoin",
@@ -78,7 +78,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     # US Inflation markets (should match)
     kalshi_inflation = UnifiedMarket(
         source="kalshi",
@@ -109,7 +109,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     predictit_inflation = UnifiedMarket(
         source="predictit",
         market_id="5012",
@@ -139,7 +139,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     # AI milestone market
     polymarket_ai = UnifiedMarket(
         source="polymarket",
@@ -170,7 +170,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     kalshi_ai = UnifiedMarket(
         source="kalshi",
         market_id="agi-by-2026",
@@ -200,7 +200,7 @@ def create_sample_markets():
             ),
         ],
     )
-    
+
     return [
         kalshi_bitcoin,
         polymarket_bitcoin,
@@ -214,10 +214,8 @@ def create_sample_markets():
 def main():
     """Add sample markets to database."""
     import argparse
-    
-    parser = argparse.ArgumentParser(
-        description="Create sample matching test data"
-    )
+
+    parser = argparse.ArgumentParser(description="Create sample matching test data")
     parser.add_argument(
         "--db",
         default="pm_arb_demo.db",
@@ -228,47 +226,45 @@ def main():
         action="store_true",
         help="Reset database before adding samples",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Initialize database
     engine, SessionLocal = init_db(f"sqlite:///{args.db}")
     session = SessionLocal()
-    
+
     try:
         if args.reset:
             from pm_arb.sql_storage import MarketORM, ContractORM
-            
+
             print("Resetting database...")
             session.query(ContractORM).delete()
             session.query(MarketORM).delete()
             session.commit()
-        
+
         # Create and save sample markets
         markets = create_sample_markets()
-        
+
         print(f"\nAdding {len(markets)} sample markets to {args.db}...")
         for market in markets:
             save_market(session, market)
             print(f"  ✓ {market.source}/{market.market_id}: {market.name}")
-        
+
         session.commit()
         print(f"\n✓ Successfully added {len(markets)} sample markets\n")
-        
+
         # Show what we added
         from pm_arb.sql_storage import MarketORM
-        
+
         count_by_source = (
-            session.query(MarketORM.source, MarketORM)
-            .group_by(MarketORM.source)
-            .all()
+            session.query(MarketORM.source, MarketORM).group_by(MarketORM.source).all()
         )
-        
+
         print("Summary by source:")
         for source, _ in count_by_source:
             count = session.query(MarketORM).filter_by(source=source).count()
             print(f"  {source.upper()}: {count} markets")
-    
+
     finally:
         session.close()
 

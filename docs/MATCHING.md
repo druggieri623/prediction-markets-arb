@@ -18,6 +18,7 @@ The market matching layer is a machine learning-based system that links similar 
 ### Core Classes
 
 #### `MatchResult`
+
 Represents a single match between two markets with detailed scoring information.
 
 ```python
@@ -35,9 +36,11 @@ class MatchResult:
 ```
 
 #### `MarketMatcher`
+
 Main class for finding matches between markets.
 
 **Constructor Parameters:**
+
 ```python
 MarketMatcher(
     name_weight=0.4,              # Weight for name similarity
@@ -69,6 +72,7 @@ Uses **TF-IDF vectorization** with character-level n-grams (2-3 characters):
 ```
 
 Example:
+
 - "Bitcoin close above $100k" vs "Bitcoin to exceed 100k" → **0.73 similarity**
 
 ### 2. Category Similarity (20%)
@@ -83,6 +87,7 @@ Exact or partial category matching:
 ```
 
 Examples:
+
 - "Crypto" vs "Cryptocurrency" → **0.7**
 - "Politics" vs "Politics" → **1.0**
 - "Politics" vs "Sports" → **0.0**
@@ -99,6 +104,7 @@ count_similarity = 1 - |count_a - count_b| / max(count_a, count_b)
 ```
 
 Examples:
+
 - Both binary with same contracts → **1.0**
 - One binary (2 contracts), one multi (5 contracts) → **0.3-0.6**
 - Different outcome types → **0.0-0.3**
@@ -198,7 +204,7 @@ matches = matcher.find_matches(all_markets, cross_source_only=True)
 for match in matches:
     if match.confidence != "high":
         continue
-    
+
     # Compare prices on market A vs B
     if match.market_a.contracts and match.market_b.contracts:
         # Find price discrepancy
@@ -219,6 +225,7 @@ for match in matches:
 - **Space Complexity**: O(n + m) for vectorizer and similarity matrices
 
 For typical use cases (100-1000 markets):
+
 - Vectorization: <100ms
 - Similarity computation: <50ms
 - Contract matching: <10ms
@@ -270,6 +277,7 @@ PYTHONPATH=src python -m pytest tests/test_matcher.py --cov=pm_arb.matcher
 ```
 
 Current test coverage:
+
 - ✅ Initialization and parameter validation
 - ✅ Text cleaning and fuzzy matching
 - ✅ Category similarity scoring

@@ -16,8 +16,12 @@ from pathlib import Path
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reset demo SQLite DB")
-    parser.add_argument("--db", default="pm_arb_demo.db", help="SQLite DB file to reset")
-    parser.add_argument("--force", action="store_true", help="Don't ask for confirmation")
+    parser.add_argument(
+        "--db", default="pm_arb_demo.db", help="SQLite DB file to reset"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Don't ask for confirmation"
+    )
     args = parser.parse_args()
 
     db_path = Path(args.db)
@@ -38,7 +42,9 @@ def main() -> None:
     try:
         from pm_arb import sql_storage
     except Exception:
-        print("Failed to import pm_arb package. Run with PYTHONPATH=src from repo root.")
+        print(
+            "Failed to import pm_arb package. Run with PYTHONPATH=src from repo root."
+        )
         raise
 
     db_url = args.db

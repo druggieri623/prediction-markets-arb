@@ -7,8 +7,9 @@ A **machine learning-based market matching system** that automatically links sim
 ## Core Components
 
 ### 1. **Matcher Engine** (`src/pm_arb/matcher.py`)
+
 - **TF-IDF Vectorization**: Character-level n-gram analysis for semantic similarity
-- **Multi-factor Scoring**: 
+- **Multi-factor Scoring**:
   - Name similarity (40%): TF-IDF cosine similarity
   - Category match (20%): Exact/partial category alignment
   - Contract structure (30%): Outcome type and count matching
@@ -16,37 +17,46 @@ A **machine learning-based market matching system** that automatically links sim
 - **Confidence Assessment**: Automatic high/medium/low confidence levels
 - **Contract Matching**: Identifies individual outcome matches
 
-### 2. **Data Models** 
+### 2. **Data Models**
+
 - `MatchResult`: Complete match information with detailed scoring
 - `MarketMatcher`: Main class with customizable weights and thresholds
 
 ### 3. **CLI Tools**
 
 #### `scripts/match_markets.py`
+
 Find and display matching markets from database
+
 ```bash
 python scripts/match_markets.py --db pm_arb_demo.db --show-contracts
 python scripts/match_markets.py --min-confidence medium --min-score 0.7
 ```
 
 #### `scripts/find_arbitrage.py`
+
 Detect price discrepancy arbitrage opportunities
+
 ```bash
 python scripts/find_arbitrage.py --db pm_arb_demo.db --min-spread 5.0
 ```
 
 #### `scripts/create_sample_markets.py`
+
 Generate test markets for demonstration
+
 ```bash
 python scripts/create_sample_markets.py --db pm_arb_demo.db --reset
 ```
 
 ### 4. **Comprehensive Tests** (`tests/test_matcher.py`)
+
 - 20 unit tests covering all matching components
 - 100% of critical paths tested
 - All tests passing ✅
 
 ### 5. **Documentation** (`docs/MATCHING.md`)
+
 - Complete algorithm explanation
 - Configuration guide
 - Integration examples
@@ -56,26 +66,31 @@ python scripts/create_sample_markets.py --db pm_arb_demo.db --reset
 ## Key Features
 
 ✅ **Robust Text Matching**
+
 - Character-level TF-IDF with bigrams/trigrams
 - Fuzzy string matching for contract names
 - Handles textual variations across platforms
 
 ✅ **Multi-Signal Scoring**
+
 - Combines 4 independent signals (name, category, contracts, time)
 - Weighted scoring with customizable weights
 - Confidence levels based on multiple factors
 
 ✅ **Contract-Level Matching**
+
 - Identifies which outcomes correspond across platforms
 - Enables specific arbitrage detection
 - Handles binary and multi-outcome markets
 
 ✅ **Performance Optimized**
+
 - <200ms for 1000 markets
 - Efficient vectorization and similarity computation
 - Suitable for real-time applications
 
 ✅ **Arbitrage Integration**
+
 - Automated spread detection
 - Profit calculation per share
 - Match quality metrics included
@@ -83,6 +98,7 @@ python scripts/create_sample_markets.py --db pm_arb_demo.db --reset
 ## Example Results
 
 ### Match Example
+
 ```
 Market A: KALSHI "Will US inflation exceed 3%?"
 Market B: PREDICTIT "Will average inflation be above 3 percent?"
@@ -100,6 +116,7 @@ Matching Contracts:
 ```
 
 ### Arbitrage Example
+
 ```
 Market: "Will Bitcoin exceed $100k?"
 Contract: NO
@@ -107,7 +124,7 @@ Contract: NO
 Trade Strategy:
   BUY on PREDICTIT @ $0.35
   SELL on KALSHI @ $0.57
-  
+
 Profit: $0.22 per share (62.86% spread)
 Match Score: 0.502, Confidence: MEDIUM
 ```
@@ -123,6 +140,7 @@ Match Score: 0.502, Confidence: MEDIUM
 ## Usage Examples
 
 ### Programmatic API
+
 ```python
 from pm_arb.matcher import MarketMatcher
 
@@ -149,6 +167,7 @@ for match in matches:
 ```
 
 ### Database Integration
+
 ```python
 from pm_arb.sql_storage import init_db, MarketORM
 from pm_arb.matcher import MarketMatcher
@@ -163,12 +182,14 @@ markets_orms = session.query(MarketORM).all()
 ## Testing & Validation
 
 All 20 matcher tests pass:
+
 ```bash
 PYTHONPATH=src python -m pytest tests/test_matcher.py -v
 # ✅ 20 passed in 0.79s
 ```
 
 Demo shows:
+
 - Bitcoin market matching (Kalshi ↔ Polymarket)
 - Inflation market matching (Kalshi ↔ PredictIt)
 - AGI market matching (Polymarket ↔ Kalshi)
@@ -177,6 +198,7 @@ Demo shows:
 ## Files Created/Modified
 
 **New Files:**
+
 - `src/pm_arb/matcher.py` (547 lines) - Core matching engine
 - `tests/test_matcher.py` (383 lines) - Comprehensive test suite
 - `scripts/match_markets.py` (237 lines) - Matching CLI tool
@@ -185,6 +207,7 @@ Demo shows:
 - `docs/MATCHING.md` (412 lines) - Complete documentation
 
 **Modified Files:**
+
 - `requirements.txt` - Fixed NumPy compatibility (numpy<2)
 
 **Total:** ~1,995 lines of new code + tests + documentation
