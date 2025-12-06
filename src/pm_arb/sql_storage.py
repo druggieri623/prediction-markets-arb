@@ -81,6 +81,7 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
     Strategy: find existing MarketORM by (source, market_id), update fields,
     delete existing contracts explicitly and insert fresh ones from the dataclass.
     """
+
     # normalize market_id so stored values are consistent across platforms
     def _normalize_id_raw(s: Optional[str], max_len: int = 128) -> Optional[str]:
         if s is None:
@@ -134,6 +135,7 @@ def save_market(session: Session, market: UnifiedMarket) -> None:
 
     # insert fresh contracts (deduplicated by contract_id) using stricter normalization
     seen = set()
+
     def _normalize_contract_id(raw: Optional[str], max_len: int = 128) -> Optional[str]:
         if raw is None:
             return None

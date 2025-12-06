@@ -43,7 +43,9 @@ def main() -> None:
         from pm_arb import sql_storage
         from pm_arb.sql_storage import MarketORM
     except Exception:
-        print("Failed to import pm_arb package. Run with PYTHONPATH=src from repo root.")
+        print(
+            "Failed to import pm_arb package. Run with PYTHONPATH=src from repo root."
+        )
         raise
 
     db_url = args.db
@@ -80,7 +82,9 @@ def main() -> None:
             if not args.dry_run:
                 sql_storage.save_market(session, um)
                 # delete old market row (and its contracts)
-                session.query(MarketORM).filter(MarketORM.source == source, MarketORM.market_id == old_id).delete()
+                session.query(MarketORM).filter(
+                    MarketORM.source == source, MarketORM.market_id == old_id
+                ).delete()
                 session.commit()
             changes.append((old_id, norm_id))
 

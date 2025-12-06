@@ -2,7 +2,7 @@ certifi==2025.11.12
 charset-normalizer==3.4.4
 idna==3.11
 joblib==1.5.2
-numpy==2.3.5
+numpy<2
 pandas==2.3.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1

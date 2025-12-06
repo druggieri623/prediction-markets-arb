@@ -13,10 +13,16 @@ from typing import Optional
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="List markets from pm_arb SQLite DB")
-    parser.add_argument("--db", default="pm_arb_demo.db", help="SQLite DB path or SQLAlchemy URL")
-    parser.add_argument("--source", help="Filter by source (kalshi|polymarket|predictit)")
+    parser.add_argument(
+        "--db", default="pm_arb_demo.db", help="SQLite DB path or SQLAlchemy URL"
+    )
+    parser.add_argument(
+        "--source", help="Filter by source (kalshi|polymarket|predictit)"
+    )
     parser.add_argument("--limit", type=int, default=50)
-    parser.add_argument("--show-contracts", action="store_true", help="Also print contract rows")
+    parser.add_argument(
+        "--show-contracts", action="store_true", help="Also print contract rows"
+    )
     args = parser.parse_args()
 
     # import local package (requires PYTHONPATH=src when running from repo root)
@@ -48,7 +54,9 @@ def main() -> None:
         print(f"{m.id}\t{m.source}\t{m.market_id}\t{m.name}")
         if args.show_contracts:
             for c in m.contracts:
-                print(f"    - {c.contract_id}\t{c.name}\tbid={c.price_bid}\task={c.price_ask}\tlast={c.last_price}")
+                print(
+                    f"    - {c.contract_id}\t{c.name}\tbid={c.price_bid}\task={c.price_ask}\tlast={c.last_price}"
+                )
 
     session.close()
 
