@@ -3,6 +3,14 @@
 Small Python project providing helpers and API utilities for exploring
 arbitrage opportunities across prediction markets.
 
+## Key Features
+
+- **Market Matching Engine**: ML-based matching using TF-IDF similarity, fuzzy matching, category alignment, and temporal proximity
+- **Logistic Regression Classifier**: Learns optimal weights from labeled data for probabilistic match prediction
+- **Arbitrage Detection**: Find profitable opportunities across markets
+- **Multi-Platform Support**: Works with Kalshi, PolyMarket, PredictIt, and other platforms
+- **Comprehensive Testing**: 42 unit tests covering matcher, classifier, and storage
+
 ## Getting started
 
 1. Create and activate a virtual environment (recommended):
@@ -18,12 +26,42 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Quick Examples
+
+### Find matching markets across platforms
+```bash
+python scripts/match_markets.py --db pm_arb_demo.db
+```
+
+### Train and evaluate the ML classifier
+```bash
+python scripts/train_classifier.py --db pm_arb_demo.db
+```
+
+### Find matches with classifier predictions
+```bash
+python scripts/match_with_classifier.py --db pm_arb_demo.db --threshold 0.5
+```
+
+## Documentation
+
+- **[MATCHING.md](docs/MATCHING.md)** - Market matcher design and usage
+- **[CLASSIFIER.md](docs/CLASSIFIER.md)** - ML classifier guide and examples
+- **[CLASSIFIER_SUMMARY.md](CLASSIFIER_SUMMARY.md)** - Implementation summary
+
 ## Development
 
 - Run the test suite:
 
 ```bash
 pytest
+```
+
+- Run specific tests:
+
+```bash
+PYTHONPATH=src python -m pytest tests/test_matcher.py -v
+PYTHONPATH=src python -m pytest tests/test_matcher_classifier.py -v
 ```
 
 - Project code lives under `src/pm_arb`.
