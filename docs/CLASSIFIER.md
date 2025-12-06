@@ -11,11 +11,13 @@ The `MatcherClassifier` is a logistic regression-based machine learning model th
 The classifier uses three key features extracted from market pairs:
 
 1. **TF-IDF Similarity** (0-1 scale)
+
    - Fuzzy string matching on market names
    - Higher values indicate more similar names
    - Captures semantic similarity between market descriptions
 
 2. **Time Difference** (in days)
+
    - Absolute number of days between event resolution times
    - 0 days = same calendar date
    - 365+ days = very different time horizons
@@ -51,11 +53,11 @@ Output Probability [0, 1]
 
 Based on training on sample data:
 
-| Feature | Importance |
-|---------|-----------|
-| time_diff | 45.1% |
-| category_match | 36.4% |
-| tfidf_sim | 18.5% |
+| Feature        | Importance |
+| -------------- | ---------- |
+| time_diff      | 45.1%      |
+| category_match | 36.4%      |
+| tfidf_sim      | 18.5%      |
 
 **Interpretation**: Time difference is the strongest predictor, followed by category match. TF-IDF similarity alone is a weaker signal, likely because it captures more semantic variation across platforms.
 
@@ -154,6 +156,7 @@ for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=Tru
 ## Comparison with Rule-Based Matcher
 
 ### Rule-Based Matcher (MarketMatcher)
+
 - ✅ Fast, no training required
 - ✅ Interpretable component scores
 - ✅ Good default weights for most cases
@@ -161,6 +164,7 @@ for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=Tru
 - ❌ No probabilistic confidence measure
 
 ### ML Classifier (MatcherClassifier)
+
 - ✅ Learns optimal feature weights from data
 - ✅ Probabilistic output (confidence measures)
 - ✅ Better generalization with more training data
@@ -169,7 +173,9 @@ for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=Tru
 - ❌ Less interpretable ("black box")
 
 ### Combined Approach
+
 For best results, use both:
+
 1. **Rule-based matcher** for initial screening (fast, many candidates)
 2. **ML classifier** for ranking and confidence assessment
 3. **Manual review** for borderline cases (0.3-0.7 probability range)
@@ -183,6 +189,7 @@ python scripts/train_classifier.py --db pm_arb_demo.db
 ```
 
 Shows:
+
 - Training data composition
 - Model metrics (accuracy, AUC-ROC, coefficients)
 - Feature importance breakdown
@@ -195,6 +202,7 @@ python scripts/match_with_classifier.py --db pm_arb_demo.db --threshold 0.5
 ```
 
 Shows:
+
 - Markets loaded from database
 - Classifier training summary
 - Detected matches above probability threshold
@@ -208,13 +216,13 @@ Shows:
 def extract_features(market_a, market_b):
     # 1. TF-IDF similarity via fuzzy matching
     tfidf_sim = self._fuzzy_match(market_a.name, market_b.name)
-    
+
     # 2. Time difference in days
     time_diff = self._compute_time_diff(market_a, market_b)
-    
+
     # 3. Category exact match
     category_match = self._compute_category_match(market_a, market_b)
-    
+
     return np.array([[tfidf_sim, time_diff, category_match]])
 ```
 
@@ -244,6 +252,7 @@ def extract_features(market_a, market_b):
 ## Potential Improvements
 
 ### Short Term
+
 - [ ] Cross-validation with stratified folds
 - [ ] ROC curve visualization
 - [ ] Confusion matrix analysis
@@ -251,14 +260,16 @@ def extract_features(market_a, market_b):
 - [ ] Handle class imbalance with SMOTE or class weights
 
 ### Medium Term
+
 - [ ] Add more features:
   - Current market price/odds
   - Market volume and liquidity
   - Number of participants
   - Historical accuracy of platform
   - Linguistic similarity (word embeddings)
-  
+
 ### Long Term
+
 - [ ] Use more sophisticated models (Random Forest, Gradient Boosting, Neural Networks)
 - [ ] Multi-class classification (same event, different event, uncertain)
 - [ ] Online learning to adapt to new platforms and market types
@@ -273,6 +284,7 @@ PYTHONPATH=src python -m pytest tests/test_matcher_classifier.py -v
 ```
 
 **Test Coverage** (16 tests):
+
 - Initialization and configuration
 - Feature extraction (TF-IDF, time difference, category match)
 - Training on various data distributions

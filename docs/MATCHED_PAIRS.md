@@ -3,6 +3,7 @@
 ## Overview
 
 The matched market pairs feature allows you to persist market matches to a database table for:
+
 - **Historical tracking**: Keep a record of all discovered matches
 - **Manual confirmation**: Mark matches as confirmed by humans
 - **Analysis**: Query and analyze match patterns over time
@@ -19,29 +20,30 @@ CREATE TABLE matched_market_pairs (
     market_id_a VARCHAR NOT NULL,       -- Market ID for market A
     source_b VARCHAR NOT NULL,          -- Source of market B
     market_id_b VARCHAR NOT NULL,       -- Market ID for market B
-    
+
     -- Match quality scores
     similarity FLOAT NOT NULL,          -- Overall match score [0, 1]
     classifier_probability FLOAT,       -- ML classifier probability [0, 1]
     name_similarity FLOAT,              -- Name matching score
     category_similarity FLOAT,          -- Category matching score
     temporal_proximity FLOAT,           -- Temporal alignment score
-    
+
     -- Manual confirmation
     is_manual_confirmed BOOLEAN DEFAULT FALSE,
     confirmed_by VARCHAR,               -- User who confirmed (email, username)
     confirmed_at DATETIME,              -- When confirmed
-    
+
     -- Metadata
     notes VARCHAR,                      -- Optional notes on match
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     UNIQUE (source_a, market_id_a, source_b, market_id_b)
 );
 ```
 
 **Key Features:**
+
 - **Unique constraint**: Prevents duplicate pairs (with consistent ordering)
 - **Pair ordering**: Automatically stores pairs in sorted order for consistency
 - **Timestamps**: Tracks when pair was created and last updated
@@ -162,6 +164,7 @@ python scripts/persist_matches.py --db pm_arb_demo.db --show
 ```
 
 **Options:**
+
 - `--db` - Database path (default: pm_arb_demo.db)
 - `--min-score` - Minimum match score to persist (default: 0.5)
 - `--use-classifier` - Compute ML classifier probabilities
@@ -169,6 +172,7 @@ python scripts/persist_matches.py --db pm_arb_demo.db --show
 - `--show` - Display persisted matches after saving
 
 **Output:**
+
 ```
 Loaded 6 markets
 
@@ -212,6 +216,7 @@ python scripts/view_matches.py --db pm_arb_demo.db --json
 ```
 
 **Options:**
+
 - `--db` - Database path (default: pm_arb_demo.db)
 - `--min-score` - Minimum similarity filter
 - `--source-a` - Filter by first source
@@ -221,6 +226,7 @@ python scripts/view_matches.py --db pm_arb_demo.db --json
 - `--json` - Output as JSON instead of text
 
 **Text Output:**
+
 ```
 ====================================================================================================
 MATCHED MARKET PAIRS (Total: 3)
@@ -240,6 +246,7 @@ Match #1 ◯ unconfirmed
 ```
 
 **JSON Output:**
+
 ```json
 [
   {
@@ -339,16 +346,16 @@ for market_a in markets:
     for market_b in markets:
         if market_a.source == market_b.source:
             continue
-        
+
         # Rule-based match
         match = matcher.match_single_pair(market_a, market_b)
-        
+
         if match.match_score < 0.6:
             continue
-        
+
         # Classifier probability
         prob = classifier.predict(market_a, market_b)
-        
+
         # Persist to database
         save_matched_pair(
             session,
@@ -369,6 +376,7 @@ session.close()
 ### Pair Ordering
 
 The system automatically ensures consistent pair ordering:
+
 - Pairs are stored with `source_a < source_b` (or `market_id_a < market_id_b` if same source)
 - This prevents duplicate records when querying in different orders
 - Ordering is handled transparently in `save_matched_pair()` and `confirm_matched_pair()`
@@ -400,6 +408,7 @@ PYTHONPATH=src python -m pytest tests/ -v
 ```
 
 **Test Coverage:**
+
 - Save and update pairs
 - Pair ordering consistency
 - Manual confirmation

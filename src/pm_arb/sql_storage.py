@@ -72,35 +72,35 @@ class ContractORM(Base):
 
 class MatchedMarketPairORM(Base):
     """Stores matched market pairs across platforms."""
+
     __tablename__ = "matched_market_pairs"
-    
+
     id = Column(Integer, primary_key=True)
     source_a = Column(String, nullable=False, index=True)
     market_id_a = Column(String, nullable=False, index=True)
     source_b = Column(String, nullable=False, index=True)
     market_id_b = Column(String, nullable=False, index=True)
-    
+
     # Match quality metrics
     similarity = Column(Float, nullable=False)  # Overall match score [0, 1]
     classifier_probability = Column(Float)  # ML classifier probability [0, 1]
     name_similarity = Column(Float)  # Name matching score
     category_similarity = Column(Float)  # Category matching score
     temporal_proximity = Column(Float)  # Temporal alignment score
-    
+
     # Manual confirmation
     is_manual_confirmed = Column(Boolean, default=False)
     confirmed_by = Column(String)  # Username or identifier of confirmer
     confirmed_at = Column(DateTime)  # When it was confirmed
-    
+
     # Additional metadata
     notes = Column(String)  # Optional notes on the match
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     __table_args__ = (
         UniqueConstraint(
-            "source_a", "market_id_a", "source_b", "market_id_b",
-            name="uix_pair"
+            "source_a", "market_id_a", "source_b", "market_id_b", name="uix_pair"
         ),
     )
 
@@ -268,7 +268,7 @@ def save_matched_pair(
     notes: Optional[str] = None,
 ) -> MatchedMarketPairORM:
     """Save or update a matched market pair.
-    
+
     Args:
         session: Database session
         source_a: Source platform for market A
@@ -281,7 +281,7 @@ def save_matched_pair(
         category_similarity: Category matching score
         temporal_proximity: Temporal alignment score
         notes: Optional notes
-    
+
     Returns:
         MatchedMarketPairORM record
     """
@@ -290,10 +290,10 @@ def save_matched_pair(
     pair_b = (source_b, market_id_b)
     if pair_b < pair_a:
         pair_a, pair_b = pair_b, pair_a
-    
+
     source_a, market_id_a = pair_a
     source_b, market_id_b = pair_b
-    
+
     # Try to find existing pair
     pair = (
         session.query(MatchedMarketPairORM)
@@ -305,7 +305,7 @@ def save_matched_pair(
         )
         .one_or_none()
     )
-    
+
     if pair is None:
         pair = MatchedMarketPairORM(
             source_a=source_a,
@@ -314,7 +314,7 @@ def save_matched_pair(
             market_id_b=market_id_b,
         )
         session.add(pair)
-    
+
     # Update fields
     pair.similarity = similarity
     pair.classifier_probability = classifier_probability
@@ -323,7 +323,7 @@ def save_matched_pair(
     pair.temporal_proximity = temporal_proximity
     pair.notes = notes
     pair.updated_at = datetime.utcnow()
-    
+
     session.commit()
     return pair
 
@@ -338,7 +338,7 @@ def confirm_matched_pair(
     notes: Optional[str] = None,
 ) -> Optional[MatchedMarketPairORM]:
     """Mark a matched pair as manually confirmed.
-    
+
     Args:
         session: Database session
         source_a: Source platform for market A
@@ -347,7 +347,7 @@ def confirm_matched_pair(
         market_id_b: Market ID for market B
         confirmed_by: Username or identifier of confirmer
         notes: Optional confirmation notes
-    
+
     Returns:
         Updated MatchedMarketPairORM or None if not found
     """
@@ -356,10 +356,10 @@ def confirm_matched_pair(
     pair_b = (source_b, market_id_b)
     if pair_b < pair_a:
         pair_a, pair_b = pair_b, pair_a
-    
+
     source_a, market_id_a = pair_a
     source_b, market_id_b = pair_b
-    
+
     pair = (
         session.query(MatchedMarketPairORM)
         .filter_by(
@@ -370,17 +370,17 @@ def confirm_matched_pair(
         )
         .one_or_none()
     )
-    
+
     if pair is None:
         return None
-    
+
     pair.is_manual_confirmed = True
     pair.confirmed_by = confirmed_by
     pair.confirmed_at = datetime.utcnow()
     if notes:
         pair.notes = notes
     pair.updated_at = datetime.utcnow()
-    
+
     session.commit()
     return pair
 
@@ -393,19 +393,19 @@ def get_matched_pairs(
     confirmed_only: bool = False,
 ) -> list[MatchedMarketPairORM]:
     """Query matched market pairs with optional filtering.
-    
+
     Args:
         session: Database session
         source_a: Filter by first source (optional)
         source_b: Filter by second source (optional)
         min_similarity: Minimum similarity score
         confirmed_only: Only return manually confirmed pairs
-    
+
     Returns:
         List of MatchedMarketPairORM records
     """
     query = session.query(MatchedMarketPairORM)
-    
+
     if source_a:
         query = query.filter(MatchedMarketPairORM.source_a == source_a)
     if source_b:
@@ -414,6 +414,5 @@ def get_matched_pairs(
         query = query.filter(MatchedMarketPairORM.similarity >= min_similarity)
     if confirmed_only:
         query = query.filter(MatchedMarketPairORM.is_manual_confirmed == True)
-    
-    return query.order_by(MatchedMarketPairORM.similarity.desc()).all()
 
+    return query.order_by(MatchedMarketPairORM.similarity.desc()).all()

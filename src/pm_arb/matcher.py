@@ -216,7 +216,7 @@ class MarketMatcher:
         self, market_a: UnifiedMarket, market_b: UnifiedMarket
     ) -> float:
         """Compute category similarity between markets.
-        
+
         Scoring:
         - Exact match: 1.0
         - Partial match (substring): 0.85
@@ -230,14 +230,14 @@ class MarketMatcher:
         # Both missing: neutral
         if not cat_a and not cat_b:
             return 0.5
-        
+
         # One missing: partial credit (more generous than before)
         if not cat_a or not cat_b:
             return 0.6
 
         cat_a_lower = cat_a.lower()
         cat_b_lower = cat_b.lower()
-        
+
         # Exact match
         if cat_a_lower == cat_b_lower:
             return 1.0
@@ -245,7 +245,7 @@ class MarketMatcher:
         # Partial match (e.g., "Politics" vs "U.S. Politics")
         if cat_a_lower in cat_b_lower or cat_b_lower in cat_a_lower:
             return 0.85
-        
+
         # Fuzzy category matching (e.g., "Crypto" vs "Cryptocurrency")
         fuzzy_sim = self._fuzzy_match(cat_a, cat_b)
         if fuzzy_sim > 0.7:
@@ -328,12 +328,11 @@ class MarketMatcher:
             # Exact date match
             if time_a.date() == time_b.date():
                 return 1.0
-            
+
             # Same month match (very close)
-            if (time_a.year == time_b.year and 
-                time_a.month == time_b.month):
+            if time_a.year == time_b.year and time_a.month == time_b.month:
                 return 0.95
-            
+
             # Same year match (significant bonus)
             if time_a.year == time_b.year:
                 return 0.8
@@ -343,11 +342,11 @@ class MarketMatcher:
 
             if days_apart <= self.max_days_apart:
                 return 1.0 - (days_apart / self.max_days_apart)
-            
+
             # Different years: still some credit if close
             if days_apart <= self.max_days_apart * 2:
                 return 0.4 - (0.3 * (days_apart / (self.max_days_apart * 2)))
-            
+
             return 0.1  # Small penalty for very different dates
         except Exception:
             return 0.6

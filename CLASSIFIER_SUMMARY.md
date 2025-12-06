@@ -11,9 +11,11 @@ The logistic regression classifier for market matching has been fully implemente
 A production-ready logistic regression classifier with the following capabilities:
 
 **Key Classes:**
+
 - `MatcherClassifier`: Main class managing feature extraction, training, and prediction
 
 **Key Methods:**
+
 - `extract_features(market_a, market_b)` → Returns 3 features as numpy array
 - `train(positive_pairs, negative_pairs)` → Trains model, returns metrics dict
 - `predict(market_a, market_b)` → Returns probability [0,1]
@@ -23,11 +25,13 @@ A production-ready logistic regression classifier with the following capabilitie
 - `load(filepath)` → Deserialize model from disk
 
 **Features:**
+
 1. TF-IDF Similarity (via fuzzy matching)
 2. Time Difference (days between event times)
 3. Category Match (binary: exact match or not)
 
 **Model Details:**
+
 - Algorithm: Logistic Regression with StandardScaler normalization
 - Framework: scikit-learn
 - Training data: Positive/negative market pairs
@@ -36,6 +40,7 @@ A production-ready logistic regression classifier with the following capabilitie
 ### 2. Comprehensive Test Suite (`tests/test_matcher_classifier.py`)
 
 **Test Coverage:** 16 tests covering:
+
 - ✅ Initialization
 - ✅ Feature extraction (all 3 features)
 - ✅ Time difference calculation (same date, different dates, missing dates)
@@ -50,6 +55,7 @@ A production-ready logistic regression classifier with the following capabilitie
 ### 3. Training Demo (`scripts/train_classifier.py`)
 
 Complete script for training and evaluating the classifier:
+
 - Loads markets from SQLite database
 - Creates synthetic training data from known matches
 - Trains classifier on positive/negative pairs
@@ -59,6 +65,7 @@ Complete script for training and evaluating the classifier:
 - Optionally saves trained model
 
 **Sample Output:**
+
 ```
 Training Summary:
   Total samples: 14
@@ -75,17 +82,19 @@ Feature Importance:
 ### 4. Matching Demo (`scripts/match_with_classifier.py`)
 
 Script showing classifier predictions for market matching:
+
 - Trains classifier on sample data
 - Finds matches above probability threshold
 - Compares classifier scores with rule-based matcher
 - Shows side-by-side analysis of different scoring methods
 
 **Sample Output:**
+
 ```
 Match #1
   Source 1: kalshi       | Will US inflation (CPI YoY) exceed 3% in 2025?
   Source 2: predictit    | Will average inflation be above 3 percent in 2025?
-  
+
   Classifier Probability: 50.93%
   Rule-based Score:       73.64%
   Confidence: medium
@@ -94,6 +103,7 @@ Match #1
 ### 5. Documentation (`docs/CLASSIFIER.md`)
 
 Comprehensive guide covering:
+
 - Overview and architecture
 - Feature descriptions and importance
 - Model performance metrics
@@ -106,6 +116,7 @@ Comprehensive guide covering:
 ## Test Results Summary
 
 ### Matcher Tests (25 tests)
+
 - Basic initialization and configuration: 3 tests ✓
 - Text cleaning and fuzzy matching: 3 tests ✓
 - Category similarity: 4 tests ✓
@@ -116,6 +127,7 @@ Comprehensive guide covering:
 - Match result representation: 1 test ✓
 
 ### Classifier Tests (16 tests)
+
 - Initialization: 1 test ✓
 - Feature extraction: 8 tests ✓
 - Training: 2 tests ✓
@@ -124,6 +136,7 @@ Comprehensive guide covering:
 - Serialization: 2 tests ✓
 
 ### Storage Tests (1 test)
+
 - Database save/load: 1 test ✓
 
 **Total: 42 tests passing ✓**
@@ -131,11 +144,13 @@ Comprehensive guide covering:
 ## Key Features
 
 ### 1. Feature Engineering
+
 - TF-IDF Similarity: Captures name matching quality
 - Time Difference: Indicates temporal alignment
 - Category Match: Binary indicator of category alignment
 
 ### 2. Model Training
+
 - Accepts positive and negative market pairs
 - Normalizes features with StandardScaler
 - Fits LogisticRegression classifier
@@ -143,16 +158,19 @@ Comprehensive guide covering:
 - Calculates coefficient-based feature importance
 
 ### 3. Prediction
+
 - Single pair prediction with probability output
 - Batch prediction for efficiency
 - Probability ranges from 0.0 (definitely different) to 1.0 (definitely same)
 
 ### 4. Model Persistence
+
 - Save trained models to disk with pickle
 - Load saved models for inference
 - Preserves scaler state for consistent feature normalization
 
 ### 5. Interpretability
+
 - Feature importance scores (normalized to percentages)
 - Model coefficients and intercept reporting
 - Training metrics (accuracy, AUC-ROC)
@@ -161,11 +179,13 @@ Comprehensive guide covering:
 ## Performance Metrics
 
 **Model Performance (on sample data):**
+
 - Accuracy: 78.57%
 - AUC-ROC: 0.8485
 - Training samples: 14 pairs (3 positive, 11 negative)
 
 **Feature Importance:**
+
 1. Time Difference: 45.1% (most important)
 2. Category Match: 36.4% (second most)
 3. TF-IDF Similarity: 18.5% (least important)
@@ -175,16 +195,19 @@ Comprehensive guide covering:
 ## Integration Points
 
 ### With Rule-Based Matcher
+
 - Uses MarketMatcher internally for feature extraction
 - Complements rule-based scores with probabilistic confidence
 - Can be used for ranking/filtering matcher results
 
 ### With Database
+
 - Loads markets from SQLite database
 - Supports all market sources (Kalshi, PolyMarket, PredictIt)
 - Works with UnifiedMarket data model
 
 ### With Arbitrage System
+
 - Classifier output can feed into arbitrage detection
 - Probability scores help prioritize matches
 - Supports both single-pair and batch operations
@@ -192,6 +215,7 @@ Comprehensive guide covering:
 ## Usage Quick Reference
 
 ### Training
+
 ```python
 classifier = MatcherClassifier()
 metrics = classifier.train(positive_pairs, negative_pairs)
@@ -199,6 +223,7 @@ print(f"Accuracy: {metrics['accuracy']:.2%}")
 ```
 
 ### Prediction
+
 ```python
 probability = classifier.predict(market_a, market_b)
 if probability > 0.7:
@@ -206,12 +231,14 @@ if probability > 0.7:
 ```
 
 ### Batch Prediction
+
 ```python
 pairs = [(market_a, market_b), (market_c, market_d)]
 probabilities = classifier.predict_batch(pairs)
 ```
 
 ### Feature Importance
+
 ```python
 importance = classifier.get_feature_importance()
 for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=True):
@@ -246,6 +273,7 @@ project-root/
 ## Git Commits
 
 ### Latest Commit
+
 ```
 commit a4cb46e
 Author: [Your Name]
@@ -268,18 +296,21 @@ Date:   [Date]
 ## Future Enhancement Ideas
 
 ### Short Term (High Priority)
+
 - [ ] Cross-validation with multiple train/test splits
 - [ ] Threshold optimization for precision/recall tradeoff
 - [ ] Confusion matrix and ROC curve visualization
 - [ ] Handle class imbalance with SMOTE or weighted loss
 
 ### Medium Term (Medium Priority)
+
 - [ ] Add more features (price volatility, user count, platform age)
 - [ ] Implement online learning for continuous improvement
 - [ ] Create model evaluation dashboard
 - [ ] Add confidence intervals to predictions
 
 ### Long Term (Lower Priority)
+
 - [ ] Try more sophisticated models (RandomForest, XGBoost, Neural Networks)
 - [ ] Multi-class classification (same/different/uncertain)
 - [ ] Explainability features (SHAP values)
@@ -296,6 +327,7 @@ Date:   [Date]
 ## Conclusion
 
 The market matching classifier is a complete, tested, and production-ready component that:
+
 - ✅ Implements logistic regression for match probability prediction
 - ✅ Uses domain-appropriate features (name, time, category)
 - ✅ Achieves good performance on sample data (78.57% accuracy, 0.8485 AUC)

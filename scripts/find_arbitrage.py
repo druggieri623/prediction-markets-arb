@@ -1,195 +1,261 @@
 #!/usr/bin/env python
-"""
-Market matching for arbitrage detection.
-
-This script demonstrates how to use the matcher to find potential
-price discrepancies (arbitrage opportunities) across platforms.
-"""
+"""CLI tool to find arbitrage opportunities in matched market pairs."""
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from pm_arb.sql_storage import init_db, MarketORM, load_market
-from pm_arb.matcher import MarketMatcher
 import argparse
+import json
+from typing import Optional
+
+from pm_arb.sql_storage import init_db, MarketORM
+from pm_arb.arbitrage_detector import ArbitrageDetector, ArbitrageOpportunity
+from pm_arb.api.models import UnifiedMarket, UnifiedContract
 
 
-def find_arbitrage_opportunities(db_path: str, min_spread: float = 0.05):
-    """
-    Find potential arbitrage opportunities across matched markets.
-
-    An arbitrage opportunity exists when:
-    1. Two markets are matched across platforms
-    2. For the same contract (e.g., YES), ask price on one platform < bid price on another
+def find_arbitrage_opportunities(
+    db_path: str = "pm_arb.db",
+    min_similarity: float = 0.70,
+    min_profit: float = 0.01,
+    min_roi_pct: float = 0.0,
+    output_format: str = "text",
+    limit: int = 10,
+    fetch_fresh: bool = False,
+    show_details: bool = False,
+) -> None:
+    """Find and display arbitrage opportunities.
 
     Args:
         db_path: Path to SQLite database
-        min_spread: Minimum bid-ask spread to consider (default 5%)
+        min_similarity: Minimum match similarity threshold [0, 1]
+        min_profit: Minimum profit to flag opportunity (dollars)
+        min_roi_pct: Minimum ROI percentage
+        output_format: Output format ("text" or "json")
+        limit: Maximum number of opportunities to show
+        fetch_fresh: Fetch fresh market data before analysis
+        show_details: Show detailed contract information
     """
     # Initialize database
-    engine, SessionLocal = init_db(f"sqlite:///{db_path}")
-    session = SessionLocal()
+    db_url = f"sqlite:///{db_path}"
+    engine, session_factory = init_db(db_url)
+    session = session_factory()
 
-    try:
-        # Load all markets
-        market_orms = session.query(MarketORM).all()
-        if not market_orms:
-            print("No markets found in database")
-            return
+    if fetch_fresh:
+        print("Fetching fresh market data...")
+        from pm_arb.api.demo_fetch import main as fetch_demo
+        fetch_demo(no_save=False)
 
-        markets = []
-        for market_orm in market_orms:
-            market = load_market(session, market_orm.source, market_orm.market_id)
-            if market:
-                markets.append(market)
+    # Initialize detector
+    detector = ArbitrageDetector(
+        min_similarity=min_similarity,
+        min_profit_threshold=min_profit,
+    )
 
-        # Find matches
-        matcher = MarketMatcher(min_score_threshold=0.5)
-        matches = matcher.find_matches(markets, cross_source_only=True)
+    # Load markets from database
+    markets_orm = session.query(MarketORM).all()
+    markets = [_orm_to_unified(m) for m in markets_orm]
 
-        print("\n" + "=" * 80)
-        print("ARBITRAGE OPPORTUNITY SCANNER")
-        print("=" * 80)
+    if not markets:
+        print("No markets in database. Run with --fetch to load data.")
+        return
 
-        opportunities = []
+    print(f"Loaded {len(markets)} markets")
 
-        for match in matches:
-            # Only consider high/medium confidence matches
-            if match.confidence not in ["high", "medium"]:
-                continue
+    detector.register_markets(markets)
 
-            market_a = match.market_a
-            market_b = match.market_b
+    # Detect opportunities
+    print(f"Analyzing matched pairs (min similarity: {min_similarity:.0%})...")
+    opportunities = detector.detect_opportunities(
+        session, min_similarity=min_similarity
+    )
 
-            # Skip if no contracts to match
-            if not market_a.contracts or not market_b.contracts:
-                continue
+    # Filter by additional criteria
+    opportunities = [
+        o
+        for o in opportunities
+        if o.min_profit >= min_profit and o.roi_pct >= min_roi_pct
+    ]
 
-            # Check each matched contract pair for price discrepancies
-            for contract_a, contract_b in match.matching_contracts:
-                # Extract prices
-                bid_a = contract_a.price_bid
-                ask_a = contract_a.price_ask
-                bid_b = contract_b.price_bid
-                ask_b = contract_b.price_ask
+    # Sort by profit and limit
+    opportunities.sort(key=lambda x: x.min_profit, reverse=True)
+    opportunities = opportunities[:limit]
 
-                # Skip if missing prices
-                if not all([bid_a, ask_a, bid_b, ask_b]):
-                    continue
+    # Display results
+    if output_format == "json":
+        _output_json(opportunities)
+    else:
+        _output_text(opportunities, show_details)
 
-                # Check for arbitrage: buy low on B, sell high on A
-                if ask_b < bid_a:
-                    spread = bid_a - ask_b
-                    spread_pct = (spread / ask_b) * 100
+    # Print summary
+    print("\n" + "=" * 70)
+    print(detector.summarize_opportunities(opportunities[:3]))
 
-                    if spread_pct >= min_spread:
-                        opportunities.append(
-                            {
-                                "market_a": market_a.name[:60],
-                                "market_a_source": market_a.source,
-                                "market_b_source": market_b.source,
-                                "contract": contract_a.name,
-                                "buy_at": ask_b,
-                                "sell_at": bid_a,
-                                "spread": spread,
-                                "spread_pct": spread_pct,
-                                "profit_per_share": spread,
-                                "match_score": match.match_score,
-                                "confidence": match.confidence,
-                            }
-                        )
+    session.close()
 
-                # Check reverse direction: buy low on A, sell high on B
-                if ask_a < bid_b:
-                    spread = bid_b - ask_a
-                    spread_pct = (spread / ask_a) * 100
 
-                    if spread_pct >= min_spread:
-                        opportunities.append(
-                            {
-                                "market_a": market_a.name[:60],
-                                "market_a_source": market_b.source,
-                                "market_b_source": market_a.source,
-                                "contract": contract_a.name,
-                                "buy_at": ask_a,
-                                "sell_at": bid_b,
-                                "spread": spread,
-                                "spread_pct": spread_pct,
-                                "profit_per_share": spread,
-                                "match_score": match.match_score,
-                                "confidence": match.confidence,
-                            }
-                        )
-
-        # Display results
-        if not opportunities:
-            print(f"\nNo arbitrage opportunities found above {min_spread}% threshold\n")
-            return
-
-        # Sort by spread (highest first)
-        opportunities.sort(key=lambda x: x["spread_pct"], reverse=True)
-
-        print(
-            f"\nFound {len(opportunities)} arbitrage opportunity(ies) above {min_spread}% threshold\n"
+def _orm_to_unified(market_orm):
+    """Convert ORM market to unified model."""
+    contracts = []
+    for c_orm in market_orm.contracts:
+        contract = UnifiedContract(
+            source=market_orm.source,
+            market_id=market_orm.market_id,
+            contract_id=c_orm.contract_id,
+            name=c_orm.name,
+            side=c_orm.side,
+            outcome_type=c_orm.outcome_type,
+            price_bid=c_orm.price_bid,
+            price_ask=c_orm.price_ask,
+            last_price=c_orm.last_price,
+            volume=c_orm.volume,
+            open_interest=c_orm.open_interest,
+            extra=c_orm.extra,
         )
+        contracts.append(contract)
 
-        for i, opp in enumerate(opportunities, 1):
-            print(f"\n{i}. ARBITRAGE OPPORTUNITY")
-            print("-" * 80)
-            print(f"Market: {opp['market_a']}")
-            print(f"Contract: {opp['contract']}")
-            print(f"\nTrade Strategy:")
-            print(
-                f"  BUY  on {opp['market_a_source'].upper():12} @ ${opp['buy_at']:.4f}"
-            )
-            print(
-                f"  SELL on {opp['market_b_source'].upper():12} @ ${opp['sell_at']:.4f}"
-            )
-            print(f"\nProfit Analysis:")
-            print(f"  Profit per share: ${opp['profit_per_share']:.4f}")
-            print(f"  Spread: {opp['spread_pct']:.2f}%")
-            print(f"\nMatch Quality:")
-            print(f"  Match Score: {opp['match_score']:.3f}")
-            print(f"  Confidence: {opp['confidence']}")
+    market = UnifiedMarket(
+        source=market_orm.source,
+        market_id=market_orm.market_id,
+        name=market_orm.name,
+        event_time=market_orm.event_time,
+        category=market_orm.category,
+        contracts=contracts,
+        extra=market_orm.extra,
+    )
 
-        # Summary
-        print(f"\n{'='*80}")
-        print("SUMMARY")
-        print("=" * 80)
-        total_profit = sum(opp["profit_per_share"] for opp in opportunities)
-        avg_spread = sum(opp["spread_pct"] for opp in opportunities) / len(
-            opportunities
-        )
-        print(f"Total Opportunities: {len(opportunities)}")
-        print(f"Average Spread: {avg_spread:.2f}%")
-        print(f"Total Profit (1 share each): ${total_profit:.2f}")
+    return market
+
+
+def _output_text(opportunities, show_details: bool = False) -> None:
+    """Output opportunities in text format."""
+    if not opportunities:
+        print("\n⊘ No profitable arbitrage opportunities found.")
+        return
+
+    print(f"\n{'='*70}")
+    print(f"FOUND {len(opportunities)} ARBITRAGE OPPORTUNITIES")
+    print(f"{'='*70}\n")
+
+    for i, opp in enumerate(opportunities, 1):
+        print(f"{i}. {opp.source_a.upper()}/{opp.market_id_a} ↔ {opp.source_b.upper()}/{opp.market_id_b}")
+        print(f"   Type: {opp.arbitrage_type.upper()}")
+        print(f"   Match Quality: {opp.match_similarity:.1%}")
+        print(f"   Min Profit: ${opp.min_profit:.4f} | Max Profit: ${opp.max_profit:.4f}")
+        print(f"   ROI: {opp.roi_pct:.2f}% | Investment: ${opp.total_investment:.4f}")
+
+        if opp.is_arbitrage:
+            print(f"   ✓ RISK-FREE PROFIT")
+        elif opp.is_scalp:
+            print(f"   ⚠ CONDITIONAL PROFIT")
+
+        if opp.notes:
+            print(f"   Strategy: {opp.notes}")
+
+        if show_details:
+            print(f"\n   YES Contract (Market A): ${opp.yes_contract_a.price_ask:.4f}")
+            print(f"   NO Contract (Market A): ${opp.no_contract_a.price_ask:.4f}")
+            print(f"   YES Contract (Market B): ${opp.yes_contract_b.price_ask:.4f}")
+            print(f"   NO Contract (Market B): ${opp.no_contract_b.price_ask:.4f}")
+
         print()
 
-    finally:
-        session.close()
+
+def _output_json(opportunities) -> None:
+    """Output opportunities in JSON format."""
+    data = {
+        "count": len(opportunities),
+        "opportunities": [
+            {
+                "source_a": opp.source_a,
+                "market_id_a": opp.market_id_a,
+                "source_b": opp.source_b,
+                "market_id_b": opp.market_id_b,
+                "arbitrage_type": opp.arbitrage_type,
+                "match_similarity": opp.match_similarity,
+                "profit_if_yes": float(opp.profit_if_yes),
+                "profit_if_no": float(opp.profit_if_no),
+                "min_profit": float(opp.min_profit),
+                "max_profit": float(opp.max_profit),
+                "roi_pct": opp.roi_pct,
+                "total_investment": float(opp.total_investment),
+                "is_arbitrage": opp.is_arbitrage,
+                "is_scalp": opp.is_scalp,
+                "notes": opp.notes,
+            }
+            for opp in opportunities
+        ],
+    }
+
+    print(json.dumps(data, indent=2))
 
 
 def main():
-    """CLI entry point."""
+    """Parse arguments and run arbitrage detector."""
     parser = argparse.ArgumentParser(
-        description="Find arbitrage opportunities in matched markets"
+        description="Find arbitrage opportunities in matched market pairs"
     )
     parser.add_argument(
         "--db",
-        default="pm_arb_demo.db",
-        help="Path to SQLite database",
+        type=str,
+        default="pm_arb.db",
+        help="Path to SQLite database (default: pm_arb.db)",
     )
     parser.add_argument(
-        "--min-spread",
+        "--min-similarity",
         type=float,
-        default=5.0,
-        help="Minimum spread % to report (default: 5)",
+        default=0.70,
+        help="Minimum match similarity threshold [0, 1] (default: 0.70)",
+    )
+    parser.add_argument(
+        "--min-profit",
+        type=float,
+        default=0.01,
+        help="Minimum profit in dollars (default: $0.01)",
+    )
+    parser.add_argument(
+        "--min-roi",
+        type=float,
+        default=0.0,
+        help="Minimum ROI percentage (default: 0.0)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Maximum number of opportunities to show (default: 10)",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    parser.add_argument(
+        "--fetch",
+        action="store_true",
+        help="Fetch fresh market data before analysis",
+    )
+    parser.add_argument(
+        "--details",
+        action="store_true",
+        help="Show detailed contract prices",
     )
 
     args = parser.parse_args()
-    find_arbitrage_opportunities(args.db, args.min_spread)
+
+    find_arbitrage_opportunities(
+        db_path=args.db,
+        min_similarity=args.min_similarity,
+        min_profit=args.min_profit,
+        min_roi_pct=args.min_roi,
+        output_format=args.format,
+        limit=args.limit,
+        fetch_fresh=args.fetch,
+        show_details=args.details,
+    )
 
 
 if __name__ == "__main__":

@@ -28,19 +28,19 @@ from .matcher import MarketMatcher, MatchResult
 class MatcherClassifier:
     """
     Logistic regression classifier for market matching probability.
-    
+
     Uses three features:
     1. TF-IDF similarity (0-1): Text similarity of market names
     2. Time difference (int): Days between event dates (-∞ to ∞)
     3. Category match (0-1): 1 if categories match exactly, 0 otherwise
-    
+
     Outputs probability [0, 1] that two markets are truly the same.
     """
 
     def __init__(self, random_state: int = 42):
         """
         Initialize the classifier.
-        
+
         Args:
             random_state: Random seed for reproducibility
         """
@@ -58,23 +58,23 @@ class MatcherClassifier:
     ) -> np.ndarray:
         """
         Extract features from a pair of markets.
-        
+
         Args:
             market_a: First market
             market_b: Second market
-        
+
         Returns:
             Feature vector [tfidf_sim, time_diff, category_match]
         """
         # Feature 1: TF-IDF similarity
         tfidf_sim = self.matcher._fuzzy_match(market_a.name, market_b.name)
-        
+
         # Feature 2: Time difference in days
         time_diff = self._compute_time_diff(market_a, market_b)
-        
+
         # Feature 3: Category equality flag
         category_match = self._compute_category_match(market_a, market_b)
-        
+
         return np.array([[tfidf_sim, time_diff, category_match]])
 
     def _compute_time_diff(
@@ -117,24 +117,24 @@ class MatcherClassifier:
     ) -> dict:
         """
         Train the classifier on labeled market pairs.
-        
+
         Args:
             positive_pairs: List of (market_a, market_b) tuples that are truly the same
             negative_pairs: List of (market_a, market_b) tuples that are different
-        
+
         Returns:
             Dictionary with training metrics
         """
         # Extract features from positive pairs
-        positive_features = np.vstack([
-            self.extract_features(a, b) for a, b in positive_pairs
-        ])
+        positive_features = np.vstack(
+            [self.extract_features(a, b) for a, b in positive_pairs]
+        )
         positive_labels = np.ones(len(positive_pairs))
 
         # Extract features from negative pairs
-        negative_features = np.vstack([
-            self.extract_features(a, b) for a, b in negative_pairs
-        ])
+        negative_features = np.vstack(
+            [self.extract_features(a, b) for a, b in negative_pairs]
+        )
         negative_labels = np.zeros(len(negative_pairs))
 
         # Combine and shuffle
@@ -172,11 +172,11 @@ class MatcherClassifier:
     def predict(self, market_a: UnifiedMarket, market_b: UnifiedMarket) -> float:
         """
         Predict probability that two markets are the same.
-        
+
         Args:
             market_a: First market
             market_b: Second market
-        
+
         Returns:
             Probability [0, 1] that markets are the same
         """
@@ -195,10 +195,10 @@ class MatcherClassifier:
     ) -> List[float]:
         """
         Predict probabilities for multiple market pairs.
-        
+
         Args:
             market_pairs: List of (market_a, market_b) tuples
-        
+
         Returns:
             List of probabilities
         """
@@ -230,7 +230,7 @@ class MatcherClassifier:
     def get_feature_importance(self) -> dict:
         """
         Get relative importance of features based on coefficients.
-        
+
         Returns:
             Dictionary with feature names and their importance scores
         """
