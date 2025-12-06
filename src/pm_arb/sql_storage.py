@@ -9,13 +9,16 @@ from __future__ import annotations
 from typing import Optional
 import re
 from unicodedata import normalize as unormalize
+from datetime import datetime
 from sqlalchemy import (
     Column,
     Integer,
     String,
     Float,
+    Boolean,
     JSON,
     ForeignKey,
+    DateTime,
     UniqueConstraint,
     create_engine,
 )
@@ -64,6 +67,41 @@ class ContractORM(Base):
 
     __table_args__ = (
         UniqueConstraint("market_id_fk", "contract_id", name="uix_market_contract"),
+    )
+
+
+class MatchedMarketPairORM(Base):
+    """Stores matched market pairs across platforms."""
+    __tablename__ = "matched_market_pairs"
+    
+    id = Column(Integer, primary_key=True)
+    source_a = Column(String, nullable=False, index=True)
+    market_id_a = Column(String, nullable=False, index=True)
+    source_b = Column(String, nullable=False, index=True)
+    market_id_b = Column(String, nullable=False, index=True)
+    
+    # Match quality metrics
+    similarity = Column(Float, nullable=False)  # Overall match score [0, 1]
+    classifier_probability = Column(Float)  # ML classifier probability [0, 1]
+    name_similarity = Column(Float)  # Name matching score
+    category_similarity = Column(Float)  # Category matching score
+    temporal_proximity = Column(Float)  # Temporal alignment score
+    
+    # Manual confirmation
+    is_manual_confirmed = Column(Boolean, default=False)
+    confirmed_by = Column(String)  # Username or identifier of confirmer
+    confirmed_at = Column(DateTime)  # When it was confirmed
+    
+    # Additional metadata
+    notes = Column(String)  # Optional notes on the match
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        UniqueConstraint(
+            "source_a", "market_id_a", "source_b", "market_id_b",
+            name="uix_pair"
+        ),
     )
 
 
@@ -214,3 +252,168 @@ def load_market(
         contracts=contracts,
         extra=m.extra or {},
     )
+
+
+def save_matched_pair(
+    session: Session,
+    source_a: str,
+    market_id_a: str,
+    source_b: str,
+    market_id_b: str,
+    similarity: float,
+    classifier_probability: Optional[float] = None,
+    name_similarity: Optional[float] = None,
+    category_similarity: Optional[float] = None,
+    temporal_proximity: Optional[float] = None,
+    notes: Optional[str] = None,
+) -> MatchedMarketPairORM:
+    """Save or update a matched market pair.
+    
+    Args:
+        session: Database session
+        source_a: Source platform for market A
+        market_id_a: Market ID for market A
+        source_b: Source platform for market B
+        market_id_b: Market ID for market B
+        similarity: Overall match score [0, 1]
+        classifier_probability: ML classifier probability [0, 1]
+        name_similarity: Name matching score
+        category_similarity: Category matching score
+        temporal_proximity: Temporal alignment score
+        notes: Optional notes
+    
+    Returns:
+        MatchedMarketPairORM record
+    """
+    # Ensure consistent pair ordering (source_a < source_b or market_a < market_b if same source)
+    pair_a = (source_a, market_id_a)
+    pair_b = (source_b, market_id_b)
+    if pair_b < pair_a:
+        pair_a, pair_b = pair_b, pair_a
+    
+    source_a, market_id_a = pair_a
+    source_b, market_id_b = pair_b
+    
+    # Try to find existing pair
+    pair = (
+        session.query(MatchedMarketPairORM)
+        .filter_by(
+            source_a=source_a,
+            market_id_a=market_id_a,
+            source_b=source_b,
+            market_id_b=market_id_b,
+        )
+        .one_or_none()
+    )
+    
+    if pair is None:
+        pair = MatchedMarketPairORM(
+            source_a=source_a,
+            market_id_a=market_id_a,
+            source_b=source_b,
+            market_id_b=market_id_b,
+        )
+        session.add(pair)
+    
+    # Update fields
+    pair.similarity = similarity
+    pair.classifier_probability = classifier_probability
+    pair.name_similarity = name_similarity
+    pair.category_similarity = category_similarity
+    pair.temporal_proximity = temporal_proximity
+    pair.notes = notes
+    pair.updated_at = datetime.utcnow()
+    
+    session.commit()
+    return pair
+
+
+def confirm_matched_pair(
+    session: Session,
+    source_a: str,
+    market_id_a: str,
+    source_b: str,
+    market_id_b: str,
+    confirmed_by: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> Optional[MatchedMarketPairORM]:
+    """Mark a matched pair as manually confirmed.
+    
+    Args:
+        session: Database session
+        source_a: Source platform for market A
+        market_id_a: Market ID for market A
+        source_b: Source platform for market B
+        market_id_b: Market ID for market B
+        confirmed_by: Username or identifier of confirmer
+        notes: Optional confirmation notes
+    
+    Returns:
+        Updated MatchedMarketPairORM or None if not found
+    """
+    # Ensure consistent pair ordering
+    pair_a = (source_a, market_id_a)
+    pair_b = (source_b, market_id_b)
+    if pair_b < pair_a:
+        pair_a, pair_b = pair_b, pair_a
+    
+    source_a, market_id_a = pair_a
+    source_b, market_id_b = pair_b
+    
+    pair = (
+        session.query(MatchedMarketPairORM)
+        .filter_by(
+            source_a=source_a,
+            market_id_a=market_id_a,
+            source_b=source_b,
+            market_id_b=market_id_b,
+        )
+        .one_or_none()
+    )
+    
+    if pair is None:
+        return None
+    
+    pair.is_manual_confirmed = True
+    pair.confirmed_by = confirmed_by
+    pair.confirmed_at = datetime.utcnow()
+    if notes:
+        pair.notes = notes
+    pair.updated_at = datetime.utcnow()
+    
+    session.commit()
+    return pair
+
+
+def get_matched_pairs(
+    session: Session,
+    source_a: Optional[str] = None,
+    source_b: Optional[str] = None,
+    min_similarity: float = 0.0,
+    confirmed_only: bool = False,
+) -> list[MatchedMarketPairORM]:
+    """Query matched market pairs with optional filtering.
+    
+    Args:
+        session: Database session
+        source_a: Filter by first source (optional)
+        source_b: Filter by second source (optional)
+        min_similarity: Minimum similarity score
+        confirmed_only: Only return manually confirmed pairs
+    
+    Returns:
+        List of MatchedMarketPairORM records
+    """
+    query = session.query(MatchedMarketPairORM)
+    
+    if source_a:
+        query = query.filter(MatchedMarketPairORM.source_a == source_a)
+    if source_b:
+        query = query.filter(MatchedMarketPairORM.source_b == source_b)
+    if min_similarity > 0:
+        query = query.filter(MatchedMarketPairORM.similarity >= min_similarity)
+    if confirmed_only:
+        query = query.filter(MatchedMarketPairORM.is_manual_confirmed == True)
+    
+    return query.order_by(MatchedMarketPairORM.similarity.desc()).all()
+
