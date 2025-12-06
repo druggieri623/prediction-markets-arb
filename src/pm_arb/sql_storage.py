@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional
 import re
 from unicodedata import normalize as unormalize
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy import (
     Column,
     Integer,
@@ -95,8 +95,8 @@ class MatchedMarketPairORM(Base):
 
     # Additional metadata
     notes = Column(String)  # Optional notes on the match
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         UniqueConstraint(
@@ -322,7 +322,7 @@ def save_matched_pair(
     pair.category_similarity = category_similarity
     pair.temporal_proximity = temporal_proximity
     pair.notes = notes
-    pair.updated_at = datetime.utcnow()
+    pair.updated_at = datetime.now(UTC)
 
     session.commit()
     return pair
@@ -376,10 +376,10 @@ def confirm_matched_pair(
 
     pair.is_manual_confirmed = True
     pair.confirmed_by = confirmed_by
-    pair.confirmed_at = datetime.utcnow()
+    pair.confirmed_at = datetime.now(UTC)
     if notes:
         pair.notes = notes
-    pair.updated_at = datetime.utcnow()
+    pair.updated_at = datetime.now(UTC)
 
     session.commit()
     return pair

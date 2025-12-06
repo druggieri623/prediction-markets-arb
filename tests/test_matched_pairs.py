@@ -1,7 +1,7 @@
 """Tests for matched market pair storage."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from pm_arb.sql_storage import (
     init_db,
     save_market,
@@ -262,11 +262,11 @@ class TestMatchedMarketPair:
 
     def test_matched_pair_timestamps(self, temp_db, sample_markets):
         """Test that created_at and updated_at timestamps are set."""
-        before = datetime.utcnow()
+        before = datetime.now(UTC)
         pair = save_matched_pair(
             temp_db, "kalshi", "btc-1", "polymarket", "0xabc123", similarity=0.75
         )
-        after = datetime.utcnow()
+        after = datetime.now(UTC)
 
         assert before <= pair.created_at <= after
         assert before <= pair.updated_at <= after
