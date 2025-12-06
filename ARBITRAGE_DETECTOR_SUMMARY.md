@@ -13,6 +13,7 @@ Built a complete **arbitrage detection system** that identifies both-side profit
 **Key Classes:**
 
 - **`ArbitrageOpportunity`**: Dataclass representing a single profitable opportunity
+
   - Markets and contracts involved
   - Profit metrics (min, max, ROI)
   - Match quality assessment
@@ -36,6 +37,7 @@ Built a complete **arbitrage detection system** that identifies both-side profit
 ### 2. CLI Tool: `find_arbitrage.py`
 
 **Features:**
+
 - Find arbitrage opportunities from database
 - Flexible filtering (similarity, profit, ROI)
 - Text and JSON output formats
@@ -43,11 +45,13 @@ Built a complete **arbitrage detection system** that identifies both-side profit
 - Detailed contract price display
 
 **Usage:**
+
 ```bash
 python scripts/find_arbitrage.py --db pm_arb.db --min-similarity 0.75 --min-profit 0.10
 ```
 
 **Options:**
+
 - `--db`: Database path
 - `--min-similarity`: Minimum match quality [0, 1]
 - `--min-profit`: Minimum profit threshold ($)
@@ -62,30 +66,36 @@ python scripts/find_arbitrage.py --db pm_arb.db --min-similarity 0.75 --min-prof
 **Test Coverage (21 tests):**
 
 - **Initialization & Registration** (3 tests)
+
   - Detector initialization with defaults
   - Single and multiple market registration
 
 - **Binary Market Detection** (3 tests)
+
   - Valid binary market detection
   - Rejection of markets without contracts
   - Rejection of non-binary outcome types
 
 - **Contract Extraction** (3 tests)
+
   - YES/NO contract extraction
   - Handling missing YES or NO contracts
 
 - **Arbitrage Calculation** (4 tests)
+
   - Profitable opportunity identification
   - ROI calculation
   - Price validation and edge cases
   - Missing data handling
 
 - **Opportunity Detection** (3 tests)
+
   - Database query integration
   - Similarity filtering
   - Empty database handling
 
 - **Summarization & Reporting** (3 tests)
+
   - Text summary generation
   - Empty opportunity handling
   - Multiple opportunity summarization
@@ -97,6 +107,7 @@ python scripts/find_arbitrage.py --db pm_arb.db --min-similarity 0.75 --min-prof
 ### 4. Documentation: `ARBITRAGE_DETECTION.md` (500+ lines)
 
 **Contents:**
+
 - System overview and concepts
 - Dutch book arbitrage explanation
 - Opportunity type classification (arbitrage, scalp, hedge)
@@ -144,11 +155,13 @@ Display Results
 ### Opportunity Classification
 
 1. **Arbitrage (Risk-Free Profit)**
+
    - `min_profit > 0` in all scenarios
    - No unfavorable outcomes
    - Guaranteed ROI
 
 2. **Scalp (Conditional Profit)**
+
    - `min_profit ≤ 0`
    - Requires favorable outcome
    - Risk-adjusted strategy
@@ -161,16 +174,19 @@ Display Results
 ## Integration Points
 
 ### With Market Matching
+
 - Consumes matched pairs from MatchedMarketPairORM table
 - Uses similarity scores for quality filtering
 - Works with matcher confidence levels
 
 ### With Database
+
 - Queries MatchedMarketPairORM for pair information
 - Loads MarketORM and ContractORM for price data
 - Stores analysis results via ORM
 
 ### With Market Data
+
 - Integrates with UnifiedMarket/UnifiedContract models
 - Handles missing prices gracefully
 - Validates price ranges [0, 1]
@@ -180,6 +196,7 @@ Display Results
 ### Optimal Position Selection
 
 For each matched pair, find cheapest way to hedge:
+
 ```python
 best_yes_price = min(market_a.yes_price, market_b.yes_price)
 best_no_price = min(market_a.no_price, market_b.no_price)
@@ -196,7 +213,7 @@ if total_investment < 1.0:
     profit_if_yes = 1.0 - total_investment
     profit_if_no = 1.0 - total_investment
     is_arbitrage = True
-    
+
 else:
     # One or both outcomes unprofitable
     is_arbitrage = False
@@ -224,6 +241,7 @@ else:
 ## Test Results
 
 **All 75 Tests Passing:**
+
 - ✅ 21 arbitrage detector tests
 - ✅ 12 matched pairs persistence tests
 - ✅ 16 classifier tests
@@ -232,6 +250,7 @@ else:
 
 **Test Execution Time:** ~1.0 second
 **Coverage Areas:**
+
 - Unit tests for all public methods
 - Edge cases (missing data, invalid prices)
 - Integration with database layer
@@ -291,12 +310,14 @@ python scripts/find_arbitrage.py --db pm_arb.db \
 ## Files Created/Modified
 
 ### Created
+
 - `src/pm_arb/arbitrage_detector.py` (600+ lines)
 - `tests/test_arbitrage_detector.py` (650+ lines)
 - `scripts/find_arbitrage.py` (260+ lines, updated)
 - `docs/ARBITRAGE_DETECTION.md` (500+ lines)
 
 ### Modified
+
 - `README.md` (updated features list and examples)
 
 ## Dependencies
@@ -319,6 +340,7 @@ python scripts/find_arbitrage.py --db pm_arb.db \
 ## Integration Status
 
 ✅ **Complete and Production-Ready**
+
 - All tests passing (75/75)
 - CLI tool tested and functional
 - Documentation comprehensive

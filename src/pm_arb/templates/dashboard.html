@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Market Arbitrage Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🎯 Prediction Market Arbitrage Detector</h1>
+                <p class="subtitle">Find and track cross-platform arbitrage opportunities</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-box">
+                    <span class="stat-label">Total Pairs</span>
+                    <span class="stat-value" id="stat-total">-</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Confirmed</span>
+                    <span class="stat-value" id="stat-confirmed">-</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Opportunities</span>
+                    <span class="stat-value" id="stat-opportunities">-</span>
+                </div>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="pairs">
+                <span>📊</span> Matched Pairs
+            </button>
+            <button class="nav-tab" data-tab="opportunities">
+                <span>💰</span> Arbitrage Opportunities
+            </button>
+            <button class="nav-tab" data-tab="stats">
+                <span>📈</span> Analytics
+            </button>
+        </nav>
+
+        <div class="content">
+            <!-- Matched Pairs Tab -->
+            <section id="pairs-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2>Matched Market Pairs</h2>
+                    <button id="refresh-pairs" class="btn btn-primary">🔄 Refresh</button>
+                </div>
+                
+                <div class="filters">
+                    <input type="text" id="search-filter" class="search-input" placeholder="Search by source or market ID...">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="confirmed-filter">
+                        Show only confirmed
+                    </label>
+                </div>
+
+                <div id="pairs-container" class="pairs-grid">
+                    <div class="loading">Loading matched pairs...</div>
+                </div>
+            </section>
+
+            <!-- Arbitrage Opportunities Tab -->
+            <section id="opportunities-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Arbitrage Opportunities</h2>
+                    <button id="refresh-opportunities" class="btn btn-success">🔄 Refresh</button>
+                </div>
+
+                <div id="opportunities-container" class="opportunities-list">
+                    <div class="loading">Loading arbitrage opportunities...</div>
+                </div>
+            </section>
+
+            <!-- Analytics Tab -->
+            <section id="stats-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Analytics & Statistics</h2>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Similarity Metrics</h3>
+                        <div id="stats-similarity" class="stat-details">
+                            <div class="metric">
+                                <span class="metric-label">Avg Overall Similarity:</span>
+                                <span class="metric-value">-</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Avg Classifier Probability:</span>
+                                <span class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>Pair Status</h3>
+                        <div id="stats-status" class="stat-details">
+                            <div class="metric">
+                                <span class="metric-label">Total Pairs:</span>
+                                <span class="metric-value">-</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Confirmed:</span>
+                                <span class="metric-value">-</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Unconfirmed:</span>
+                                <span class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>Last Updated</h3>
+                        <div id="stats-timestamp" class="stat-details">
+                            <span id="update-time">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="footer">
+            <p>Prediction Market Arbitrage Detector • Data updated in real-time • <a href="/api/health">API Status</a></p>
+        </footer>
+    </div>
+
+    <!-- Pair Detail Modal -->
+    <div id="pair-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

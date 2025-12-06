@@ -144,9 +144,11 @@ class ArbitrageDetector:
 
         # Fetch matched pairs if not provided
         if matched_pairs is None:
-            matched_pairs = session.query(MatchedMarketPairORM).filter(
-                MatchedMarketPairORM.similarity >= min_sim
-            ).all()
+            matched_pairs = (
+                session.query(MatchedMarketPairORM)
+                .filter(MatchedMarketPairORM.similarity >= min_sim)
+                .all()
+            )
 
         opportunities = []
         for pair in matched_pairs:
@@ -157,9 +159,7 @@ class ArbitrageDetector:
         opportunities.sort(key=lambda x: x.min_profit, reverse=True)
         return opportunities
 
-    def _analyze_pair(
-        self, pair: MatchedMarketPairORM
-    ) -> List[ArbitrageOpportunity]:
+    def _analyze_pair(self, pair: MatchedMarketPairORM) -> List[ArbitrageOpportunity]:
         """Analyze a single matched pair for arbitrage opportunities.
 
         Args:
@@ -268,7 +268,9 @@ class ArbitrageDetector:
             return None
 
         # Ensure prices are valid probabilities
-        if not all(0 <= p <= 1 for p in [yes_a_price, no_a_price, yes_b_price, no_b_price]):
+        if not all(
+            0 <= p <= 1 for p in [yes_a_price, no_a_price, yes_b_price, no_b_price]
+        ):
             return None
 
         # Convert to floats
@@ -285,14 +287,14 @@ class ArbitrageDetector:
         # Strategy: Buy YES in whichever market is cheaper, buy NO in the other
         # This creates exposure to YES outcome at (cheaper YES price) and
         # exposure to NO outcome at (cheaper NO price)
-        
+
         # Case 1: YES YES (buy YES in both) + NO NO (buy NO in both)
         total_cost = yes_a_p + yes_b_p + no_a_p + no_b_p
-        
+
         # But we only need to hold one "YES" and one "NO" for the matched outcome
         # Let's use a different strategy: matched pair arbitrage
         # Buy YES in cheapest market, NO in cheapest market
-        
+
         if yes_a_p <= yes_b_p:
             yes_price = yes_a_p
             yes_source = "A"
@@ -309,28 +311,28 @@ class ArbitrageDetector:
 
         # Total cost for a complete hedge
         total_investment = yes_price + no_price
-        
+
         # In a perfect hedge, exactly $1 is returned regardless of outcome
         guaranteed_return = 1.0
         min_profit = guaranteed_return - total_investment
 
         # If prices sum to > 1.0, we have arbitrage (guaranteed profit)
         # If prices sum to < 1.0, we need favorable outcome for profit
-        
+
         # For a more sophisticated analysis, calculate profit for each outcome
         # Assuming we normalize positions...
 
         # Actually, let's use a cleaner approach:
         # Calculate the "overround" or profit from the implied odds
-        
+
         # In matched pair arbitrage:
         # You buy Y from market A at price P_A
         # You buy N from market B at price (1-Q_B) where Q_B is NO price in B
         # Net: P_A + (1 - Q_B) gives you a guaranteed position
-        
+
         # Simplified: if YES in A is cheaper and NO in B is cheaper,
         # you can lock in arbitrage
-        
+
         profit_if_yes = guaranteed_return - (yes_price + no_price)
         profit_if_no = guaranteed_return - (yes_price + no_price)
         min_profit = profit_if_yes  # Same for both outcomes
@@ -389,9 +391,7 @@ class ArbitrageDetector:
         opps = self.detect_opportunities(session)
         return opps[:limit]
 
-    def summarize_opportunities(
-        self, opportunities: List[ArbitrageOpportunity]
-    ) -> str:
+    def summarize_opportunities(self, opportunities: List[ArbitrageOpportunity]) -> str:
         """Generate a summary report of opportunities.
 
         Args:
@@ -414,12 +414,16 @@ class ArbitrageDetector:
         if arbs:
             lines.append(f"✓ {len(arbs)} ARBITRAGE (risk-free profit):")
             for opp in arbs[:3]:
-                lines.append(f"  • Min profit: ${opp.min_profit:.2f} ({opp.roi_pct:.1f}% ROI)")
+                lines.append(
+                    f"  • Min profit: ${opp.min_profit:.2f} ({opp.roi_pct:.1f}% ROI)"
+                )
 
         if scalps:
             lines.append(f"\n⚠ {len(scalps)} SCALP (conditional profit):")
             for opp in scalps[:3]:
-                lines.append(f"  • Min profit: ${opp.min_profit:.2f} ({opp.roi_pct:.1f}% ROI)")
+                lines.append(
+                    f"  • Min profit: ${opp.min_profit:.2f} ({opp.roi_pct:.1f}% ROI)"
+                )
 
         if hedges:
             lines.append(f"\n⊘ {len(hedges)} HEDGE (risk mitigation):")

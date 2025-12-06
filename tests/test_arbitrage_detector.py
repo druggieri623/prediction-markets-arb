@@ -308,14 +308,12 @@ class TestContractExtraction:
 class TestArbitrageCalculation:
     """Test arbitrage opportunity calculation."""
 
-    def test_calculate_arbitrage_opportunity(
-        self, test_market_arb, db_session
-    ):
+    def test_calculate_arbitrage_opportunity(self, test_market_arb, db_session):
         """Test calculation of arbitrage opportunity.
-        
+
         Market A: YES $0.40, NO $0.60 (total $1.00)
         Market B: YES $0.65, NO $0.30 (total $0.95)
-        
+
         Opportunity: Buy YES from A ($0.40) + NO from B ($0.30) = $0.70
         This always returns $1.00 for a $0.30 profit (42.9% ROI)
         """
@@ -343,7 +341,9 @@ class TestArbitrageCalculation:
         assert opp.arbitrage_type == "both_sides"
         assert opp.total_investment == pytest.approx(0.70, abs=0.01)
 
-    def test_no_arbitrage_with_poor_prices(self, test_market_a, test_market_b, db_session):
+    def test_no_arbitrage_with_poor_prices(
+        self, test_market_a, test_market_b, db_session
+    ):
         """Test that minimal/no arbitrage is found when prices are aligned."""
         detector = ArbitrageDetector(min_similarity=0.70)
         detector.register_markets([test_market_a, test_market_b])
@@ -368,11 +368,11 @@ class TestArbitrageCalculation:
     def test_arbitrage_missing_prices(self, test_market_arb, db_session):
         """Test handling of missing price data."""
         market_a, market_b = test_market_arb
-        
+
         # Remove prices from one contract
         market_a.contracts[0].price_ask = None
         market_a.contracts[0].last_price = None
-        
+
         detector = ArbitrageDetector()
         detector.register_markets([market_a, market_b])
 
@@ -408,9 +408,7 @@ class TestArbitrageCalculation:
 class TestDetectOpportunities:
     """Test full opportunity detection workflow."""
 
-    def test_detect_opportunities_with_matched_pairs(
-        self, test_market_arb, db_session
-    ):
+    def test_detect_opportunities_with_matched_pairs(self, test_market_arb, db_session):
         """Test detecting opportunities from database matched pairs."""
         market_a, market_b = test_market_arb
         detector = ArbitrageDetector(min_similarity=0.70)

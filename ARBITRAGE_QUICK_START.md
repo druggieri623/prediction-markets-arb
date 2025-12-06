@@ -118,7 +118,7 @@ kalshi_opps = [o for o in opportunities if o.source_a == "kalshi"]
 over_dollar = [o for o in opportunities if o.min_profit > 1.0]
 
 # Combined
-best_arbs = [o for o in opportunities 
+best_arbs = [o for o in opportunities
              if o.is_arbitrage and o.roi_pct > 2.0]
 ```
 
@@ -137,31 +137,34 @@ Notes: Buy YES at A ($0.40), NO at B ($0.30)
 
 ### Opportunity Attributes
 
-| Attribute | Meaning | Example |
-|-----------|---------|---------|
-| `min_profit` | Minimum guaranteed profit | $0.30 |
-| `max_profit` | Maximum possible profit | $0.30 |
-| `roi_pct` | Return on investment | 42.86% |
-| `total_investment` | Capital required | $0.70 |
-| `match_similarity` | Market matching quality | 0.95 (95%) |
-| `is_arbitrage` | Risk-free? | True |
-| `arbitrage_type` | Opportunity type | "both_sides" |
+| Attribute          | Meaning                   | Example      |
+| ------------------ | ------------------------- | ------------ |
+| `min_profit`       | Minimum guaranteed profit | $0.30        |
+| `max_profit`       | Maximum possible profit   | $0.30        |
+| `roi_pct`          | Return on investment      | 42.86%       |
+| `total_investment` | Capital required          | $0.70        |
+| `match_similarity` | Market matching quality   | 0.95 (95%)   |
+| `is_arbitrage`     | Risk-free?                | True         |
+| `arbitrage_type`   | Opportunity type          | "both_sides" |
 
 ### Opportunity Types
 
 **✓ Arbitrage** (Risk-Free)
+
 - Buy YES cheaply on one platform
 - Buy NO cheaply on another
 - Guaranteed profit regardless of outcome
 - Can execute immediately
 
 **⚠ Scalp** (Conditional)
+
 - Profit depends on favorable outcome
 - Higher potential returns
 - Requires favorable outcome to be true
 - More risk but can be lucrative
 
 **⊘ Hedge** (Risk Mitigation)
+
 - Expected loss in all scenarios
 - Reduces maximum loss
 - Used for portfolio protection
@@ -227,16 +230,19 @@ cross_platform = [
 ## Typical Workflow
 
 1. **Load Market Data**
+
    ```bash
    python scripts/demo_fetch.py
    ```
 
 2. **Find Matches**
+
    ```bash
    python scripts/match_markets.py --db pm_arb.db
    ```
 
 3. **Detect Arbitrage**
+
    ```bash
    python scripts/find_arbitrage.py --db pm_arb.db
    ```
@@ -263,18 +269,21 @@ PYTHONPATH=src pytest tests/ --cov=src/pm_arb/arbitrage_detector.py
 ## Data Requirements
 
 ### Markets Need
+
 - `source`: Platform (kalshi, polymarket, predictit)
 - `market_id`: Unique identifier
 - `name`: Market question
 - `contracts`: List of outcomes
 
 ### Contracts Need
+
 - `source`, `market_id`: Identifiers
 - `side`: "YES" or "NO"
 - `outcome_type`: "binary"
 - `price_ask`: Ask price [0, 1]
 
 ### Matched Pairs Need
+
 - `source_a`, `market_id_a`: First market
 - `source_b`, `market_id_b`: Second market
 - `similarity`: Match quality [0, 1]
@@ -282,18 +291,21 @@ PYTHONPATH=src pytest tests/ --cov=src/pm_arb/arbitrage_detector.py
 ## Troubleshooting
 
 ### No opportunities found
+
 - ✓ Lower `--min-similarity` (try 0.60-0.70)
 - ✓ Lower `--min-profit` (try $0.01)
 - ✓ Ensure matched pairs exist in database
 - ✓ Check market data has prices
 
 ### Wrong results
+
 - ✓ Verify binary markets (YES/NO only)
 - ✓ Check price data [0, 1] range
 - ✓ Ensure matched pair quality is good
 - ✓ Review contract side names
 
 ### Performance issues
+
 - ✓ Use `--limit` to reduce output
 - ✓ Use `--min-similarity 0.80+` for fewer pairs
 - ✓ Index database tables
@@ -302,11 +314,13 @@ PYTHONPATH=src pytest tests/ --cov=src/pm_arb/arbitrage_detector.py
 ## Performance Tips
 
 1. **Filter aggressively**
+
    - Use `--min-similarity 0.75+` for high-quality matches
    - Set `--min-profit` to realistic thresholds
    - Use `--limit` to focus on best opportunities
 
 2. **Database optimization**
+
    - Keep database indexed
    - Archive old pairs periodically
    - Use `--db` to specify efficient storage
@@ -320,6 +334,7 @@ PYTHONPATH=src pytest tests/ --cov=src/pm_arb/arbitrage_detector.py
 ## Key Metrics
 
 **Perfect Arbitrage Score**
+
 ```
 Match Quality: ≥ 0.90     (High confidence match)
 Min Profit: ≥ $0.10      (Meaningful profit)
@@ -329,6 +344,7 @@ Type: arbitrage          (Risk-free)
 ```
 
 **Good Opportunity Score**
+
 ```
 Match Quality: ≥ 0.75    (Decent confidence)
 Min Profit: ≥ $0.05      (Profitable)
@@ -348,6 +364,7 @@ Type: arbitrage or scalp (Profitable)
 ## Support
 
 For issues or questions:
+
 1. Check documentation in `docs/ARBITRAGE_DETECTION.md`
 2. Review test examples in `tests/test_arbitrage_detector.py`
 3. Check script help: `python scripts/find_arbitrage.py --help`

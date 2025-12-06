@@ -68,6 +68,37 @@ python scripts/find_arbitrage.py --db pm_arb_demo.db --min-similarity 0.75
 python scripts/find_arbitrage.py --db pm_arb_demo.db --details --format json
 ```
 
+## Web Interface
+
+Launch an interactive web dashboard to browse and manage matched market pairs:
+
+```bash
+python scripts/run_web_server.py --db pm_arb_demo.db --host 127.0.0.1 --port 5000
+```
+
+Then open your browser to: **http://127.0.0.1:5000**
+
+### Features
+
+- 📊 **Dashboard** - Real-time statistics and overview
+- 🔄 **Browse Pairs** - View all matched market pairs with similarity metrics
+- ✓ **Confirm Matches** - Mark pairs as manually confirmed
+- 💰 **Arbitrage Opportunities** - Identify and track potential profit opportunities
+- 📈 **Analytics** - View aggregated statistics and trends
+- 🔍 **Search & Filter** - Find pairs by source or market ID
+- 🌐 **REST API** - Programmatic access to all data
+
+### API Endpoints
+
+```
+GET    /api/pairs                    - List all matched pairs
+GET    /api/arbitrage-opportunities - List arbitrage opportunities
+GET    /api/stats                    - Get statistics
+POST   /api/pairs/<id>/confirm       - Confirm a pair
+DELETE /api/pairs/<id>               - Delete a pair
+GET    /api/health                   - Health check
+```
+
 ## Documentation
 
 - **[MATCHING.md](docs/MATCHING.md)** - Market matcher design and usage

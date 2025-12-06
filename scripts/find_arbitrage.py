@@ -45,6 +45,7 @@ def find_arbitrage_opportunities(
     if fetch_fresh:
         print("Fetching fresh market data...")
         from pm_arb.api.demo_fetch import main as fetch_demo
+
         fetch_demo(no_save=False)
 
     # Initialize detector
@@ -139,10 +140,14 @@ def _output_text(opportunities, show_details: bool = False) -> None:
     print(f"{'='*70}\n")
 
     for i, opp in enumerate(opportunities, 1):
-        print(f"{i}. {opp.source_a.upper()}/{opp.market_id_a} ↔ {opp.source_b.upper()}/{opp.market_id_b}")
+        print(
+            f"{i}. {opp.source_a.upper()}/{opp.market_id_a} ↔ {opp.source_b.upper()}/{opp.market_id_b}"
+        )
         print(f"   Type: {opp.arbitrage_type.upper()}")
         print(f"   Match Quality: {opp.match_similarity:.1%}")
-        print(f"   Min Profit: ${opp.min_profit:.4f} | Max Profit: ${opp.max_profit:.4f}")
+        print(
+            f"   Min Profit: ${opp.min_profit:.4f} | Max Profit: ${opp.max_profit:.4f}"
+        )
         print(f"   ROI: {opp.roi_pct:.2f}% | Investment: ${opp.total_investment:.4f}")
 
         if opp.is_arbitrage:

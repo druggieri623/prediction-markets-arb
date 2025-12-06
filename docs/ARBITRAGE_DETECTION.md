@@ -13,10 +13,12 @@ The arbitrage detector identifies **both-side profit opportunities** across matc
 An arbitrage opportunity exists when the sum of "all outcomes" prices across markets falls below 1.0. In this scenario, buying all outcomes guarantees a risk-free profit.
 
 **Example:**
+
 - Market A: YES @ $0.40, NO @ $0.60 (sum = $1.00)
 - Market B: YES @ $0.65, NO @ $0.30 (sum = $0.95)
 
 Optimal strategy:
+
 - Buy YES from Market A ($0.40)
 - Buy NO from Market B ($0.30)
 - **Total investment:** $0.70
@@ -28,18 +30,21 @@ Optimal strategy:
 The detector classifies opportunities into three categories:
 
 #### ✓ Arbitrage (Risk-Free Profit)
+
 - Minimum profit > 0 in all scenarios
 - No unfavorable outcomes
 - Guaranteed return on investment
 - Example: Dutch book scenario above
 
 #### ⚠ Scalp (Conditional Profit)
+
 - Profit depends on favorable outcome
 - Minimum profit ≤ 0
 - Positive expected value if outcome probabilities are favorable
 - Used for hedging and position taking
 
 #### ⊘ Hedge (Risk Mitigation)
+
 - Reduces maximum loss
 - Expected loss in all scenarios
 - Useful for portfolio protection
@@ -145,16 +150,16 @@ python scripts/find_arbitrage.py --details --min-profit 0.05
 
 ### CLI Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--db` | `pm_arb.db` | Path to SQLite database |
-| `--min-similarity` | `0.70` | Minimum match quality [0, 1] |
-| `--min-profit` | `0.01` | Minimum profit in dollars |
-| `--min-roi` | `0.0` | Minimum ROI percentage |
-| `--limit` | `10` | Maximum opportunities to show |
-| `--format` | `text` | Output format: `text` or `json` |
-| `--fetch` | - | Fetch fresh market data first |
-| `--details` | - | Show contract price details |
+| Option             | Default     | Description                     |
+| ------------------ | ----------- | ------------------------------- |
+| `--db`             | `pm_arb.db` | Path to SQLite database         |
+| `--min-similarity` | `0.70`      | Minimum match quality [0, 1]    |
+| `--min-profit`     | `0.01`      | Minimum profit in dollars       |
+| `--min-roi`        | `0.0`       | Minimum ROI percentage          |
+| `--limit`          | `10`        | Maximum opportunities to show   |
+| `--format`         | `text`      | Output format: `text` or `json` |
+| `--fetch`          | -           | Fetch fresh market data first   |
+| `--details`        | -           | Show contract price details     |
 
 ## Algorithm
 
@@ -174,16 +179,19 @@ python scripts/find_arbitrage.py --details --min-profit 0.05
 For each matched pair with binary contracts:
 
 1. Extract:
+
    - `yes_a_price` = Cost to buy YES in market A
    - `no_a_price` = Cost to buy NO in market A
    - `yes_b_price` = Cost to buy YES in market B
    - `no_b_price` = Cost to buy NO in market B
 
 2. Choose optimal prices:
+
    - `yes_price` = min(yes_a_price, yes_b_price)
    - `no_price` = min(no_a_price, no_b_price)
 
 3. Calculate profit:
+
    - `total_investment` = yes_price + no_price
    - `guaranteed_return` = 1.0 (one outcome always occurs)
    - `min_profit` = guaranteed_return - total_investment
@@ -197,6 +205,7 @@ For each matched pair with binary contracts:
 The arbitrage detector requires:
 
 ### Markets
+
 - `source`: Platform name (e.g., "kalshi", "polymarket")
 - `market_id`: Unique market identifier
 - `name`: Market question
@@ -204,6 +213,7 @@ The arbitrage detector requires:
 - `contracts`: List of contract outcomes
 
 ### Contracts
+
 - `source`, `market_id`, `contract_id`: Identifiers
 - `name`: Contract name (e.g., "YES", "NO")
 - `side`: Outcome side (typically "YES" or "NO")
@@ -213,6 +223,7 @@ The arbitrage detector requires:
 - `last_price`: Last traded price [0, 1]
 
 ### Matched Pairs
+
 - `source_a`, `market_id_a`: First market identifiers
 - `source_b`, `market_id_b`: Second market identifiers
 - `similarity`: Match quality score [0, 1]
@@ -240,16 +251,19 @@ opportunities = detector.detect_opportunities(session)
 ## Performance Considerations
 
 ### Efficiency
+
 - **Market Loading**: O(n) to load and index n markets
 - **Opportunity Detection**: O(m) to analyze m matched pairs
 - **Overall**: O(n + m) for complete analysis
 
 ### Scaling
+
 - Works efficiently with 100s of markets
 - Scales to 1000s of matched pairs
 - Minimal memory footprint (dataclass-based)
 
 ### Optimization Tips
+
 1. **Filter by similarity**: Use `--min-similarity 0.80+` for high-quality matches only
 2. **Set profit thresholds**: Use `--min-profit` to reduce noise
 3. **Limit results**: Use `--limit` to focus on top opportunities
@@ -331,7 +345,7 @@ high_roi = [o for o in opportunities if o.roi_pct > 5.0 and o.is_arbitrage]
 
 ```python
 kalshi_opps = [o for o in opportunities if o.source_a == "kalshi"]
-cross_source = [o for o in opportunities 
+cross_source = [o for o in opportunities
                 if o.source_a != o.source_b]
 ```
 
